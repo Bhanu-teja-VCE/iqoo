@@ -657,8 +657,12 @@
 </head>
 <body>
     <nav>
-        <a href="index.html" class="back-btn">← Back to Guide</a>
-        <h1>Sentinel Chaos Lab — Interactive Demo</h1>
+        <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+            <a href="index.html" class="back-btn" style="margin-right: 0;">← Back to Guide</a>
+            <a href="evaluation.html" class="back-btn" style="margin-right: 0; background-color: rgba(88, 166, 255, 0.12); border-color: var(--accent); color: var(--accent);">⚖️ Evaluation Engine</a>
+            <a href="user-manual.html" class="back-btn" style="margin-right: 0.75rem;">📖 User Manual</a>
+            <h1>Sentinel Chaos Lab — Interactive Demo</h1>
+        </div>
     </nav>
 
     <!-- ── Interactive Lab Manual Guide ────────────────────────── -->
@@ -736,6 +740,7 @@
                     <div class="prompt-meta-actions">
                         <span class="prompt-target-file" id="prompt-target-file">🎯 Target: <code>auth.py</code> | Verifier: <code>python3 test_auth.py</code></span>
                         <button class="chip-btn" id="btn-copy-prompt" title="Copy prompt text to clipboard">📋 Copy Prompt</button>
+                        <a href="evaluation.html" id="btn-take-to-eval" class="chip-btn" style="color: var(--cyan); border-color: var(--cyan); text-decoration: none;" title="Evaluate this task side-by-side: Without Sentinel vs With Sentinel">⚖️ Take to Evaluation Engine ➔</a>
                     </div>
                 </div>
                 <div class="prompt-box-body">
@@ -987,6 +992,10 @@
             promptTaskTag.innerText = task.id;
             promptTargetFile.innerHTML = `🎯 Target: <code>${task.file}</code> | Verifier: <code>${task.testCmd}</code>`;
             promptText.innerText = task.prompt;
+            const takeToEvalBtn = document.getElementById('btn-take-to-eval');
+            if (takeToEvalBtn) {
+                takeToEvalBtn.href = `evaluation.html?task=${task.id}`;
+            }
             state.task_id = task.id;
             state.instruction = task.prompt.split('\n\n')[0];
             renderState();
