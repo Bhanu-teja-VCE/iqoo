@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentinel User Manual</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --bg-surface: #161b22;
+            --bg-raised: #1c2333;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-dim: #8b949e;
+            --text-bright: #e6edf3;
+            --heading: #f0f6fc;
+            --accent: #58a6ff;
+            --accent2: #7ee787;
+            --accent3: #d2a8ff;
+            --red: #f85149;
+            --orange: #d29922;
+            --cyan: #39d4e6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background-color: var(--bg);
+            z-index: 100;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            color: var(--text-bright);
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            background-color: var(--bg-raised);
+            border-color: var(--text-dim);
+            text-decoration: none;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        h1, h2, h3, h4 {
+            color: var(--heading);
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+        }
+
+        h2 {
+            font-size: 1.75rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+        }
+
+        p, ul, ol {
+            margin-bottom: 1rem;
+        }
+
+        ul, ol {
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.25rem;
+        }
+
+        .workflow-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .workflow-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .workflow-card.traditional {
+            border-top: 4px solid var(--red);
+        }
+
+        .workflow-card.sentinel {
+            border-top: 4px solid var(--accent2);
+        }
+
+        .workflow-card h3 {
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .traditional h3 { color: var(--red); }
+        .sentinel h3 { color: var(--accent2); }
+
+        .workflow-step {
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .workflow-step::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--text-dim);
+        }
+        
+        .traditional .workflow-step.pain {
+            color: var(--orange);
+            font-weight: 500;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .traditional .workflow-step.pain::before { content: "!"; color: var(--orange); }
+
+        .sentinel .workflow-step.benefit {
+            color: var(--accent2);
+            font-weight: 500;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .sentinel .workflow-step.benefit::before { content: "✓"; color: var(--accent2); }
+
+        pre {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1rem;
+            overflow-x: auto;
+            margin-bottom: 1.5rem;
+            font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.875rem;
+        }
+
+        code {
+            font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+            background-color: rgba(110, 118, 129, 0.4);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-size: 85%;
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        /* Syntax highlighting */
+        .kw { color: var(--red); } /* Keyword */
+        .fn { color: var(--accent3); } /* Function */
+        .st { color: var(--cyan); } /* String */
+        .cm { color: var(--text-dim); font-style: italic; } /* Comment */
+        .ty { color: var(--accent2); } /* Type */
+        .nu { color: var(--accent); } /* Number */
+
+        .callout {
+            padding: 1rem 1.5rem;
+            border-left: 4px solid var(--accent);
+            background-color: var(--bg-surface);
+            border-radius: 0 6px 6px 0;
+            margin: 1.5rem 0;
+        }
+
+        .callout.tip {
+            border-left-color: var(--accent2);
+        }
+        
+        .callout.warning {
+            border-left-color: var(--orange);
+        }
+
+        .callout strong {
+            display: block;
+            margin-bottom: 0.25rem;
+            color: var(--heading);
+        }
+
+        @media (max-width: 860px) {
+            .workflow-comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="index.html" class="back-btn">← Back to Guide</a>
+</header>
+
+<div class="container">
+    <h1>Sentinel User Manual</h1>
+    <p>Welcome to the User Manual for <strong>Sentinel</strong> — a deterministic reliability harness for AI coding agents. This document covers everything from basic concepts to integrating Sentinel into your own AI workflows.</p>
+
+    <h2>1. Traditional Workflow vs Sentinel Workflow</h2>
+    
+    <div class="workflow-comparison">
+        <div class="workflow-card traditional">
+            <h3>WITHOUT Sentinel (Traditional)</h3>
+            <div class="workflow-step">Developer gives task to AI agent (Cursor, Copilot, Aider, etc.)</div>
+            <div class="workflow-step">Agent generates code changes</div>
+            <div class="workflow-step">Agent says 'Done! I fixed the bug'</div>
+            <div class="workflow-step">Developer manually reviews the diff</div>
+            <div class="workflow-step">Developer manually runs tests</div>
+            <div class="workflow-step">Developer discovers agent hallucinated / code is broken</div>
+            <div class="workflow-step">Developer manually reverts changes</div>
+            <div class="workflow-step">Developer re-prompts the agent</div>
+            <div class="workflow-step">Repeat until it works (or give up)</div>
+            
+            <div class="workflow-step pain">Pain points: No safety guardrails, no automatic verification, blind trust in LLM output, manual recovery, wasted time</div>
+        </div>
+
+        <div class="workflow-card sentinel">
+            <h3>WITH Sentinel</h3>
+            <div class="workflow-step">Developer gives task to Sentinel</div>
+            <div class="workflow-step">Sentinel creates isolated git worktree (base repo stays immutable)</div>
+            <div class="workflow-step">Sentinel's orchestrator asks LLM to generate a plan</div>
+            <div class="workflow-step">For each step: LLM proposes tool call → Sandbox validates (path jail + command whitelist + credential stripping) → Tool executes in isolation</div>
+            <div class="workflow-step">After all steps: Verifier independently runs pytest + checks git diff</div>
+            <div class="workflow-step">If tests fail: RecoveryController rolls back workspace via git, injects diagnostics, retries automatically (up to 3x)</div>
+            <div class="workflow-step">If tests pass + diff is valid → DONE ✓ with deterministic proof</div>
+            
+            <div class="workflow-step benefit">Benefits: Zero trust in LLM self-reports, sandboxed execution, automatic recovery, reproducible benchmarks</div>
+        </div>
+    </div>
+
+    <h2>2. Prerequisites</h2>
+    <ul>
+        <li><strong>Python 3.10+</strong> (tested on 3.14)</li>
+        <li><strong>Git</strong> (for worktree isolation and diff analysis)</li>
+        <li><strong>Optional: Docker</strong> (for full container-level sandboxing; falls back to host subprocess with weaker isolation on Windows)</li>
+        <li><strong>Optional: Ollama</strong> (for local LLM inference) or a <strong>Groq API key</strong> (for cloud inference)</li>
+    </ul>
+
+    <h2>3. Installation & Setup</h2>
+    <pre><code><span class="cm"># Clone the repository</span>
+git clone &lt;repo-url&gt;
+<span class="kw">cd</span> iqoo
+
+<span class="cm"># No pip install needed for core! Zero external dependencies.</span>
+<span class="cm"># The entire backend uses Python stdlib only (urllib, subprocess, json, dataclasses)</span>
+
+<span class="cm"># For the API server (optional, for dashboard):</span>
+pip install fastapi uvicorn
+
+<span class="cm"># Start the API server:</span>
+python -m uvicorn sentinel.server.api:app --reload --port <span class="nu">8000</span></code></pre>
+
+    <h2>4. Quick Start — Running Your First Task</h2>
+    <p>Run the CLI demo to see Sentinel in action interactively:</p>
+    <pre><code>python -m sentinel.cli.demo</code></pre>
+
+    <p>To see a side-by-side benchmark comparison between a raw agent and a Sentinel-wrapped agent:</p>
+    <pre><code>python -c <span class="st">"from sentinel.benchmark.runner import run_comparative_benchmark; run_comparative_benchmark()"</span></code></pre>
+    
+    <div class="callout tip">
+        <strong>Benchmark Output Explained</strong>
+        <p>The raw agent often fails by making false claims about fixing a bug without actually testing it. The Sentinel-wrapped agent, however, verifies the results independently and either succeeds with deterministic proof or fails safely.</p>
+    </div>
+
+    <h2>5. Configuring Models</h2>
+    <p>Sentinel provides three model adapter options out-of-the-box:</p>
+
+    <h3>MockModelAdapter (Default for benchmarks)</h3>
+    <ul>
+        <li>Uses scripted responses for deterministic testing</li>
+        <li>No external service needed</li>
+    </ul>
+
+    <h3>OllamaAdapter (Local inference)</h3>
+    <pre><code><span class="cm"># Install Ollama: https://ollama.ai</span>
+ollama pull llama3.1:8b
+<span class="cm"># Sentinel connects to http://localhost:11434/api/generate</span></code></pre>
+
+    <h3>GroqAdapter (Cloud inference)</h3>
+    <pre><code><span class="kw">export</span> GROQ_API_KEY=<span class="st">"gsk_..."</span>
+<span class="cm"># Sentinel connects via urllib to https://api.groq.com/openai/v1/chat/completions</span>
+<span class="cm"># Recommended model: llama-3.1-8b-instant</span></code></pre>
+
+    <p>You can easily switch between them using the factory function:</p>
+    <pre><code><span class="kw">from</span> sentinel.agent.model_adapter <span class="kw">import</span> get_model_adapter
+
+adapter = get_model_adapter(<span class="st">"ollama"</span>)   <span class="cm"># local</span>
+adapter = get_model_adapter(<span class="st">"groq"</span>)     <span class="cm"># cloud</span>
+adapter = get_model_adapter(<span class="st">"mock"</span>)     <span class="cm"># testing</span></code></pre>
+
+    <h2>6. Integrating Sentinel With Your Own Agent / Codebase</h2>
+    
+    <p>Follow these steps to integrate Sentinel into your projects:</p>
+
+    <ol>
+        <li>
+            <strong>Prepare your repo:</strong> Your codebase needs a test suite (pytest, unittest, etc.) — Sentinel uses real test execution as its ground truth.
+        </li>
+        
+        <li>
+            <strong>Create a TaskState:</strong>
+<pre><code><span class="kw">from</span> sentinel.core.types <span class="kw">import</span> <span class="ty">TaskState</span>
+
+state = <span class="ty">TaskState</span>(
+    task_id=<span class="st">"my-bugfix-001"</span>,
+    workspace_path=<span class="st">"/path/to/git/worktree"</span>,
+    instruction=<span class="st">"Fix the authentication timeout bug in auth.py"</span>,
+    status=<span class="st">"planning"</span>,
+)</code></pre>
+        </li>
+
+        <li>
+            <strong>Choose your model adapter and run:</strong>
+<pre><code><span class="kw">from</span> sentinel.agent.orchestrator <span class="kw">import</span> <span class="fn">run_task_loop</span>
+<span class="kw">from</span> sentinel.agent.model_adapter <span class="kw">import</span> <span class="fn">get_model_adapter</span>
+
+adapter = <span class="fn">get_model_adapter</span>(<span class="st">"ollama"</span>)  <span class="cm"># or "groq"</span>
+final_state = <span class="fn">run_task_loop</span>(
+    state=state,
+    test_command=<span class="st">"pytest tests/"</span>,
+    model_adapter=adapter,
+    expected_files=[<span class="st">"auth.py"</span>],  <span class="cm"># boundary — only these files should be modified</span>
+    max_attempts=<span class="nu">3</span>,
+)
+
+<span class="kw">print</span>(<span class="st">f"Result: {final_state.status}"</span>)  <span class="cm"># "done" or "failed"</span>
+<span class="kw">print</span>(<span class="st">f"Verified: {final_state.verifier_result}"</span>)</code></pre>
+        </li>
+
+        <li>
+            <strong>Use workspace isolation</strong> (recommended for production):
+<pre><code><span class="kw">from</span> sentinel.sandbox.workspace <span class="kw">import</span> <span class="fn">create_task_workspace</span>, <span class="fn">destroy_task_workspace</span>
+
+ws_path = <span class="fn">create_task_workspace</span>(
+    repo_path=<span class="st">"/path/to/your/repo"</span>,
+    base_commit=<span class="st">"HEAD"</span>,
+    task_id=<span class="st">"my-bugfix-001"</span>,
+)
+<span class="cm"># Agent works in ws_path — your original repo is NEVER touched</span>
+<span class="cm"># When done:</span>
+<span class="fn">destroy_task_workspace</span>(<span class="st">"my-bugfix-001"</span>)</code></pre>
+        </li>
+
+        <li>
+            <strong>Add chaos testing</strong> (optional but recommended):
+<pre><code><span class="kw">from</span> sentinel.chaos.injector <span class="kw">import</span> <span class="ty">FailureInjector</span>
+<span class="kw">from</span> sentinel.chaos.faults <span class="kw">import</span> <span class="ty">FaultClass</span>
+
+injector = <span class="ty">FailureInjector</span>(seed=<span class="nu">42</span>)
+state.injected_fault = <span class="ty">FaultClass</span>.TRUNCATED_DIFF.value
+
+<span class="cm"># Now run_task_loop will inject the fault and test recovery</span></code></pre>
+        </li>
+    </ol>
+</div>
+
+</body>
+</html>

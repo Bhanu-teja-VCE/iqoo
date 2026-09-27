@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentinel Chaos Lab — Interactive Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d1117;
+            --bg-surface: #161b22;
+            --bg-raised: #1c2333;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-dim: #8b949e;
+            --text-bright: #e6edf3;
+            --heading: #f0f6fc;
+            --accent: #58a6ff;
+            --green: #7ee787;
+            --purple: #d2a8ff;
+            --red: #f85149;
+            --orange: #d29922;
+            --cyan: #39d4e6;
+            --yellow: #e3b341;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Navigation */
+        nav {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background-color: var(--bg-surface);
+            flex-shrink: 0;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.4rem 1rem;
+            background-color: var(--bg-raised);
+            color: var(--text-bright);
+            text-decoration: none;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+            margin-right: 1.5rem;
+        }
+
+        .back-btn:hover {
+            background-color: var(--border);
+            color: var(--heading);
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--heading);
+        }
+
+        /* Layout */
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .left-panel {
+            width: 60%;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .right-panel {
+            width: 40%;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-surface);
+            overflow-y: auto;
+            padding: 1.5rem;
+            gap: 1.5rem;
+        }
+
+        /* Config Bar */
+        .config-bar {
+            padding: 1.5rem;
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: flex-end;
+            flex-shrink: 0;
+        }
+
+        .config-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+
+        select {
+            background-color: var(--bg-raised);
+            color: var(--text-bright);
+            border: 1px solid var(--border);
+            padding: 0.5rem 2.5rem 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            appearance: none;
+            outline: none;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .fault-selector {
+            display: flex;
+            gap: 0.25rem;
+            background-color: var(--bg-raised);
+            padding: 0.25rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .fault-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .fault-btn:hover {
+            color: var(--text-bright);
+        }
+
+        .fault-btn.active {
+            background-color: var(--border);
+            color: var(--text-bright);
+        }
+
+        .btn {
+            padding: 0.5rem 1.25rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .btn-launch {
+            background-color: #238636;
+            color: #ffffff;
+        }
+        
+        .btn-launch:hover:not(:disabled) {
+            background-color: #2ea043;
+        }
+        
+        .btn-launch:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-reset {
+            background-color: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-reset:hover {
+            background-color: var(--bg-raised);
+        }
+
+        /* State Machine */
+        .state-machine {
+            padding: 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--bg);
+            flex-shrink: 0;
+            overflow-x: auto;
+        }
+
+        .node-container {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            position: relative;
+        }
+
+        .node {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            border: 2px solid var(--border);
+            background-color: var(--bg-raised);
+            color: var(--text-dim);
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
+        }
+
+        .arrow {
+            color: var(--border);
+            font-size: 1.2rem;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+
+        .node.active {
+            color: #fff;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px currentColor;
+        }
+
+        .node[data-node="PLANNING"].active { border-color: var(--cyan); background-color: rgba(57, 212, 230, 0.1); color: var(--cyan); }
+        .node[data-node="EXECUTING"].active { border-color: var(--orange); background-color: rgba(210, 153, 34, 0.1); color: var(--orange); }
+        .node[data-node="VERIFYING"].active { border-color: var(--purple); background-color: rgba(210, 168, 255, 0.1); color: var(--purple); }
+        .node[data-node="DONE"].active { border-color: var(--green); background-color: rgba(126, 231, 135, 0.1); color: var(--green); }
+        .node[data-node="RECOVERING"].active { border-color: var(--red); background-color: rgba(248, 81, 73, 0.1); color: var(--red); }
+        .node[data-node="FAILED"].active { border-color: var(--red); background-color: rgba(248, 81, 73, 0.1); color: var(--red); }
+
+        .loop-arrow {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            width: calc(100% - 100px); /* Approx width back to EXECUTING */
+            height: 30px;
+            border: 2px dashed var(--border);
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            transform: translateX(-80%);
+            z-index: 1;
+            opacity: 0.3;
+        }
+        
+        .recovering-active .loop-arrow {
+            border-color: var(--red);
+            opacity: 1;
+            animation: dash 1s linear infinite;
+        }
+
+        @keyframes dash {
+            to { stroke-dashoffset: -20; }
+        }
+
+        /* Console */
+        .console {
+            flex: 1;
+            background-color: var(--bg);
+            padding: 1.5rem;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8125rem;
+            line-height: 1.6;
+        }
+
+        .log-line {
+            margin-bottom: 0.25rem;
+            opacity: 0;
+            animation: fadeIn 0.3s forwards;
+            word-break: break-all;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        .log-time { color: var(--text-dim); margin-right: 0.5rem; }
+        .log-plan { color: var(--cyan); }
+        .log-tool { color: var(--orange); }
+        .log-chaos { color: var(--red); font-weight: bold; }
+        .log-verify { color: var(--purple); }
+        .log-recover { color: var(--yellow); }
+        .log-done { color: var(--green); }
+        .log-fail { color: var(--red); }
+
+        /* Cards */
+        .card {
+            background-color: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            display: none;
+        }
+
+        .card.visible {
+            display: block;
+            animation: slideUp 0.4s ease forwards;
+        }
+        
+        .card-header {
+            padding: 0.75rem 1rem;
+            background-color: var(--bg-raised);
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--heading);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+
+        .json-view {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-bright);
+            white-space: pre-wrap;
+        }
+
+        .json-key { color: var(--accent); }
+        .json-string { color: var(--text-bright); }
+        .json-number { color: var(--orange); }
+        .json-boolean { color: var(--cyan); }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.25rem 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8125rem;
+        }
+        
+        .metric-label { color: var(--text-dim); }
+        .metric-value.pass { color: var(--green); }
+        .metric-value.fail { color: var(--red); }
+        
+        .diff-view {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            background-color: #0d1117;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            overflow-x: auto;
+        }
+
+        .diff-add { color: var(--green); background-color: rgba(126, 231, 135, 0.1); }
+        .diff-remove { color: var(--red); background-color: rgba(248, 81, 73, 0.1); }
+        .diff-header { color: var(--text-dim); }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 900px) {
+            .container { flex-direction: column; overflow: auto; }
+            .left-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--border); height: 60vh; }
+            .right-panel { width: 100%; height: auto; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="index.html" class="back-btn">← Back to Guide</a>
+        <h1>Sentinel Chaos Lab — Interactive Demo</h1>
+    </nav>
+
+    <div class="container">
+        <div class="left-panel">
+            <div class="config-bar">
+                <div class="config-group" style="flex: 1; min-width: 200px;">
+                    <label>Target Task</label>
+                    <select id="task-select">
+                        <option value="task_01">Auth Token Expiration Fix</option>
+                        <option value="task_02">Tiered Discount Calculator Fix</option>
+                        <option value="task_03">HTML Entity Sanitizer Fix</option>
+                    </select>
+                </div>
+                <div class="config-group">
+                    <label>Fault Injection</label>
+                    <div class="fault-selector" id="fault-selector">
+                        <button class="fault-btn active" data-fault="TRUNCATED_DIFF">TRUNCATED_DIFF</button>
+                        <button class="fault-btn" data-fault="SYNTAX_CORRUPT">SYNTAX_CORRUPT</button>
+                        <button class="fault-btn" data-fault="TOOL_TIMEOUT">TOOL_TIMEOUT</button>
+                        <button class="fault-btn" data-fault="FLAKY_TEST">FLAKY_TEST</button>
+                        <button class="fault-btn" data-fault="NONE">NONE</button>
+                    </div>
+                </div>
+                <button class="btn btn-launch" id="btn-launch">🚀 Launch Sentinel</button>
+                <button class="btn btn-reset" id="btn-reset">Reset</button>
+            </div>
+
+            <div class="state-machine">
+                <div class="node-container" id="nodes-container">
+                    <div class="node" data-node="PLANNING">PLANNING</div>
+                    <div class="arrow">→</div>
+                    <div class="node" data-node="EXECUTING">EXECUTING</div>
+                    <div class="arrow">→</div>
+                    <div class="node" data-node="VERIFYING">VERIFYING</div>
+                    <div class="arrow">→</div>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div class="node" data-node="DONE">DONE ✓</div>
+                        <div class="node" data-node="RECOVERING">RECOVERING</div>
+                    </div>
+                    <div class="loop-arrow"></div>
+                </div>
+            </div>
+
+            <div class="console" id="console">
+                <div class="log-line"><span class="log-time">System</span> <span class="log-done">Ready. Select a task and fault, then launch.</span></div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <!-- Current State Card -->
+            <div class="card visible" id="card-state">
+                <div class="card-header">
+                    <span>TaskState</span>
+                    <span style="color: var(--text-dim); font-size: 0.75rem;">real-time</span>
+                </div>
+                <div class="card-body">
+                    <div class="json-view" id="state-json"></div>
+                </div>
+            </div>
+
+            <!-- Diff Preview Card -->
+            <div class="card visible" id="card-diff">
+                <div class="card-header">Workspace Git Diff</div>
+                <div class="card-body">
+                    <div class="diff-view" id="diff-content">
+                        <div class="diff-header">--- a/target.py</div>
+                        <div class="diff-header">+++ b/target.py</div>
+                        <div style="color: var(--text-dim);">// No changes yet</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Verifier Card -->
+            <div class="card" id="card-verify">
+                <div class="card-header">Verifier Result</div>
+                <div class="card-body">
+                    <div class="metric-row">
+                        <span class="metric-label">test_exit_code</span>
+                        <span class="metric-value" id="v-exit">--</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">timed_out</span>
+                        <span class="metric-value" id="v-timeout">--</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">diff_valid</span>
+                        <span class="metric-value" id="v-diff">--</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">files_changed</span>
+                        <span class="metric-value" id="v-files" style="color: var(--accent);">--</span>
+                    </div>
+                    <div class="metric-row" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed var(--border);">
+                        <span class="metric-label" style="font-weight: bold; color: var(--text);">VERDICT</span>
+                        <span class="metric-value" id="v-verdict" style="font-weight: bold;">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recovery Card -->
+            <div class="card" id="card-recovery">
+                <div class="card-header" style="background-color: rgba(210, 153, 34, 0.1); color: var(--orange);">Recovery Decision</div>
+                <div class="card-body">
+                    <div class="metric-row">
+                        <span class="metric-label">Action</span>
+                        <span class="metric-value" id="r-action" style="color: var(--orange); font-weight: bold;">--</span>
+                    </div>
+                    <div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-dim);" id="r-rationale">
+                        --
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Summary Card -->
+            <div class="card" id="card-summary">
+                <div class="card-header" style="background-color: rgba(126, 231, 135, 0.1); color: var(--green);">Execution Summary</div>
+                <div class="card-body">
+                    <div class="metric-row">
+                        <span class="metric-label">Final Status</span>
+                        <span class="metric-value pass">RESOLVED</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Total Attempts</span>
+                        <span class="metric-value" id="s-attempts" style="color: var(--accent);">--</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Faults Encountered</span>
+                        <span class="metric-value" id="s-faults" style="color: var(--orange);">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data & Config
+        const TASKS = {
+            task_01: {
+                name: "Auth Token Expiration Fix",
+                file: "auth.py",
+                testCmd: "python3 test_auth.py",
+                buggy: "def is_token_valid(token, expires_at):\n    return True",
+                fix: "def is_token_valid(token, expires_at):\n    return time.time() < expires_at"
+            },
+            task_02: {
+                name: "Tiered Discount Calculator Fix",
+                file: "pricing.py",
+                testCmd: "python3 test_pricing.py",
+                buggy: "def calculate_discount(subtotal, tier):\n    return 0",
+                fix: "def calculate_discount(subtotal, tier):\n    if tier == 'GOLD': return subtotal * 0.2\n    return subtotal * 0.1"
+            },
+            task_03: {
+                name: "HTML Entity Sanitizer Fix",
+                file: "utils.py",
+                testCmd: "python3 test_utils.py",
+                buggy: "def sanitize(text):\n    return text",
+                fix: "def sanitize(text):\n    return text.replace('<', '&lt;').replace('>', '&gt;')"
+            }
+        };
+
+        // DOM Elements
+        const taskSelect = document.getElementById('task-select');
+        const faultBtns = document.querySelectorAll('.fault-btn');
+        const btnLaunch = document.getElementById('btn-launch');
+        const btnReset = document.getElementById('btn-reset');
+        const consoleEl = document.getElementById('console');
+        const stateJsonEl = document.getElementById('state-json');
+        const diffContentEl = document.getElementById('diff-content');
+        
+        let currentFault = 'TRUNCATED_DIFF';
+        let simulationActive = false;
+        
+        // Initial State
+        let state = {
+            status: "idle",
+            attempt_count: 0,
+            current_step_index: 0,
+            injected_fault: null,
+            model_used: "local"
+        };
+
+        // Event Listeners
+        faultBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (simulationActive) return;
+                faultBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFault = btn.dataset.fault;
+            });
+        });
+
+        btnLaunch.addEventListener('click', startSimulation);
+        btnReset.addEventListener('click', resetEnvironment);
+
+        // Utilities
+        function renderState() {
+            const jsonStr = JSON.stringify(state, null, 2);
+            // Simple syntax highlighting
+            const highlighted = jsonStr
+                .replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:')
+                .replace(/: "([^"]*)"/g, ': <span class="json-string">"$1"</span>')
+                .replace(/: (true|false)/g, ': <span class="json-boolean">$1</span>')
+                .replace(/: ([0-9]+)/g, ': <span class="json-number">$1</span>');
+            stateJsonEl.innerHTML = highlighted;
+        }
+
+        function getTimestamp() {
+            const now = new Date();
+            return now.toISOString().substring(11, 23);
+        }
+
+        function log(msg, type = 'done') {
+            const line = document.createElement('div');
+            line.className = 'log-line';
+            
+            let prefix = '';
+            if (type === 'plan') prefix = '[PLAN] ';
+            else if (type === 'tool') prefix = '[TOOL] ';
+            else if (type === 'chaos') prefix = '[CHAOS] ';
+            else if (type === 'verify') prefix = '[VERIFY] ';
+            else if (type === 'recover') prefix = '[RECOVER] ';
+            else if (type === 'done') prefix = '[DONE] ';
+            else if (type === 'fail') prefix = '[FAIL] ';
+
+            line.innerHTML = `<span class="log-time">${getTimestamp()}</span> <span class="log-${type}">${prefix}${msg}</span>`;
+            consoleEl.appendChild(line);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        function setNode(nodeName) {
+            document.querySelectorAll('.node').forEach(n => n.classList.remove('active'));
+            if (nodeName) {
+                document.querySelector(`.node[data-node="${nodeName}"]`).classList.add('active');
+                if (nodeName === 'RECOVERING') {
+                    document.getElementById('nodes-container').classList.add('recovering-active');
+                } else {
+                    document.getElementById('nodes-container').classList.remove('recovering-active');
+                }
+            }
+        }
+
+        function showCard(id) {
+            document.getElementById(id).classList.add('visible');
+        }
+        
+        function hideCard(id) {
+            document.getElementById(id).classList.remove('visible');
+        }
+
+        function updateDiff(taskData, diffType) {
+            let diffHtml = `<div class="diff-header">--- a/${taskData.file}</div>
+                            <div class="diff-header">+++ b/${taskData.file}</div>`;
+            
+            const buggyLines = taskData.buggy.split('\n');
+            const fixLines = taskData.fix.split('\n');
+
+            buggyLines.forEach(l => diffHtml += `<div class="diff-remove">- ${l}</div>`);
+
+            if (diffType === 'clean') {
+                fixLines.forEach(l => diffHtml += `<div class="diff-add">+ ${l}</div>`);
+            } else if (diffType === 'truncated') {
+                diffHtml += `<div class="diff-add">+ ${fixLines[0]}</div>`;
+                diffHtml += `<div style="color: var(--text-dim);">// [EOF - Truncated]</div>`;
+            } else if (diffType === 'syntax') {
+                diffHtml += `<div class="diff-add">+ class _Broken(((:</div>`;
+                fixLines.forEach(l => diffHtml += `<div class="diff-add">+ ${l}</div>`);
+            } else if (diffType === 'none') {
+                diffHtml += `<div style="color: var(--text-dim);">// No changes yet</div>`;
+            }
+
+            diffContentEl.innerHTML = diffHtml;
+        }
+
+        const wait = (ms) => new Promise(r => setTimeout(r, ms));
+
+        function resetEnvironment() {
+            if (simulationActive) return;
+            consoleEl.innerHTML = '';
+            log('Environment reset. Ready.', 'done');
+            state = { status: "idle", attempt_count: 0, current_step_index: 0, injected_fault: null, model_used: "local" };
+            renderState();
+            setNode(null);
+            hideCard('card-verify');
+            hideCard('card-recovery');
+            hideCard('card-summary');
+            updateDiff(TASKS[taskSelect.value], 'none');
+        }
+
+        async function startSimulation() {
+            if (simulationActive) return;
+            simulationActive = true;
+            btnLaunch.disabled = true;
+            taskSelect.disabled = true;
+
+            const taskId = taskSelect.value;
+            const task = TASKS[taskId];
+            const fault = currentFault;
+            
+            resetEnvironment();
+            hideCard('card-verify');
+            hideCard('card-recovery');
+            hideCard('card-summary');
+
+            state.attempt_count = 0;
+            state.injected_fault = null;
+            
+            try {
+                await runAttempt(task, fault, true);
+                
+                if (fault !== 'NONE') {
+                    // Recovery Path
+                    state.status = "recovering";
+                    renderState();
+                    setNode("RECOVERING");
+                    log("RecoveryController evaluating failure...", "recover");
+                    await wait(800);
+                    
+                    log(`Action: RETRY (attempt ${state.attempt_count} < max 3)`, "recover");
+                    document.getElementById('r-action').innerText = "RETRY";
+                    document.getElementById('r-rationale').innerText = `Verification failed due to injected ${fault}. Retrying with clean workspace.`;
+                    showCard('card-recovery');
+                    await wait(800);
+                    
+                    log("Rolling back: git checkout -- . && git clean -fd", "recover");
+                    updateDiff(task, 'none');
+                    await wait(800);
+                    log("Workspace restored to clean baseline", "recover");
+                    
+                    state.attempt_count++;
+                    state.injected_fault = null; // Clean run this time
+                    await wait(1000);
+                    
+                    hideCard('card-verify');
+                    
+                    // Second clean attempt
+                    await runAttempt(task, 'NONE', false);
+                }
+
+                // Summary
+                state.status = "done";
+                renderState();
+                setNode("DONE");
+                log(`✅ Task resolved successfully. ${state.attempt_count} retry(s).`, "done");
+                
+                document.getElementById('s-attempts').innerText = state.attempt_count + 1;
+                document.getElementById('s-faults').innerText = fault !== 'NONE' ? 1 : 0;
+                showCard('card-summary');
+
+            } catch (e) {
+                console.error(e);
+            } finally {
+                simulationActive = false;
+                btnLaunch.disabled = false;
+                taskSelect.disabled = false;
+            }
+        }
+
+        async function runAttempt(task, fault, isFirst) {
+            // 1. Planning
+            if (isFirst) {
+                state.status = "planning";
+                renderState();
+                setNode("PLANNING");
+                log(`Generating repair plan for "${task.name}"...`, "plan");
+                await wait(800);
+                log(`Plan: ["Read ${task.file}", "Write the fix", "Run tests"]`, "plan");
+                await wait(1000);
+            }
+
+            // 2. Executing
+            state.status = "executing";
+            state.current_step_index = 0;
+            renderState();
+            setNode("EXECUTING");
+            
+            log(`Step 0: read_file {"path": "${task.file}"}`, "tool");
+            await wait(600);
+            log(`✓ Read lines from ${task.file}`, "tool");
+            await wait(800);
+
+            state.current_step_index = 1;
+            renderState();
+            log(`Step 1: write_file {"path": "${task.file}", "content": "..."}`, "tool");
+            await wait(600);
+
+            // Fault Injection during write
+            if (fault === 'TRUNCATED_DIFF') {
+                state.injected_fault = fault;
+                renderState();
+                log(`🔴 FAULT INJECTED: truncated_diff — Content cut to 50% before disk write`, "chaos");
+                updateDiff(task, 'truncated');
+                await wait(400);
+                log(`⚠ write_file wrote partial bytes (truncated)`, "tool");
+            } else if (fault === 'SYNTAX_CORRUPT') {
+                state.injected_fault = fault;
+                renderState();
+                log(`🔴 FAULT INJECTED: syntax_corrupt — Prepended garbage characters`, "chaos");
+                updateDiff(task, 'syntax');
+                await wait(400);
+                log(`⚠ write_file wrote corrupted content`, "tool");
+            } else if (fault === 'TOOL_TIMEOUT') {
+                state.injected_fault = fault;
+                renderState();
+                updateDiff(task, 'clean');
+                log(`✓ write_file wrote clean content`, "tool");
+            } else {
+                updateDiff(task, 'clean');
+                log(`✓ write_file wrote content`, "tool");
+            }
+            await wait(1000);
+
+            state.current_step_index = 2;
+            renderState();
+            log(`Step 2: run_tests {"cmd": "${task.testCmd}"}`, "tool");
+            await wait(600);
+
+            let testPass = true;
+            let timeout = false;
+
+            if (fault === 'TOOL_TIMEOUT') {
+                log(`🔴 FAULT INJECTED: tool_timeout — Process hanging`, "chaos");
+                await wait(1000);
+                log(`✗ Command timed out after 5.0s`, "fail");
+                testPass = false;
+                timeout = true;
+            } else if (fault === 'FLAKY_TEST') {
+                state.injected_fault = fault;
+                renderState();
+                log(`🔴 FAULT INJECTED: flaky_test — Forcing exit code 1 despite correct code`, "chaos");
+                await wait(400);
+                log(`✗ Tests failed (exit code 1) — Flaky failure`, "fail");
+                testPass = false;
+            } else if (fault === 'TRUNCATED_DIFF') {
+                log(`✗ Tests failed (exit code 1) — SyntaxError: unexpected EOF`, "fail");
+                testPass = false;
+            } else if (fault === 'SYNTAX_CORRUPT') {
+                log(`✗ Tests failed (exit code 1) — SyntaxError: invalid syntax`, "fail");
+                testPass = false;
+            } else {
+                log(`✓ All tests passed (exit code 0)`, "tool");
+            }
+            await wait(1000);
+
+            // 3. Verifying
+            state.status = "verifying";
+            renderState();
+            setNode("VERIFYING");
+            log(`Running independent verification...`, "verify");
+            await wait(800);
+            
+            const exitCode = testPass ? 0 : 1;
+            log(`test_exit_code = ${exitCode}`, "verify");
+            log(`diff_valid = true`, "verify");
+            
+            document.getElementById('v-exit').innerText = exitCode;
+            document.getElementById('v-exit').className = testPass ? 'metric-value pass' : 'metric-value fail';
+            document.getElementById('v-timeout').innerText = timeout;
+            document.getElementById('v-timeout').className = timeout ? 'metric-value fail' : 'metric-value pass';
+            document.getElementById('v-diff').innerText = 'true';
+            document.getElementById('v-diff').className = 'metric-value pass';
+            document.getElementById('v-files').innerText = `["${task.file}"]`;
+
+            await wait(500);
+
+            if (testPass && !timeout) {
+                log(`✓ VERDICT: PASSED — deterministic proof of completion`, "verify");
+                document.getElementById('v-verdict').innerText = 'PASSED';
+                document.getElementById('v-verdict').className = 'metric-value pass';
+            } else {
+                log(`✗ VERDICT: FAILED — conditions not met`, "fail");
+                document.getElementById('v-verdict').innerText = 'FAILED';
+                document.getElementById('v-verdict').className = 'metric-value fail';
+            }
+            showCard('card-verify');
+            await wait(1000);
+
+            if (!testPass || timeout) {
+                throw new Error("Verification Failed");
+            }
+        }
+
+        // Init
+        renderState();
+        taskSelect.addEventListener('change', () => {
+            if(!simulationActive) updateDiff(TASKS[taskSelect.value], 'none');
+        });
+        updateDiff(TASKS.task_01, 'none');
+
+    </script>
+</body>
+</html>

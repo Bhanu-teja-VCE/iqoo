@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentinel — Internal Engineering Documentation</title>
+<style>
+  /* ── Reset & Base ─────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:         #0d1117;
+    --bg-surface: #161b22;
+    --bg-raised:  #1c2333;
+    --bg-code:    #0d1117;
+    --border:     #30363d;
+    --border-hl:  #3b82f6;
+    --text:       #c9d1d9;
+    --text-dim:   #8b949e;
+    --text-bright:#e6edf3;
+    --heading:    #f0f6fc;
+    --accent:     #58a6ff;
+    --accent2:    #7ee787;
+    --accent3:    #d2a8ff;
+    --red:        #f85149;
+    --orange:     #d29922;
+    --cyan:       #39d4e6;
+    --sidebar-w:  260px;
+    --content-max:780px;
+    --font-sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --font-mono:  'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', Consolas, monospace;
+  }
+
+  html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.75;
+    font-size: 15.5px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Sidebar ──────────────────────────────────────────────────── */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: var(--sidebar-w);
+    height: 100vh;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    padding: 28px 0 32px;
+  }
+
+  .sidebar-brand {
+    padding: 0 24px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .sidebar-brand h1 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--heading);
+    letter-spacing: -0.3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sidebar-brand h1 .shield {
+    width: 20px; height: 20px;
+    fill: var(--accent2);
+  }
+
+  .sidebar-brand p {
+    font-size: 11.5px;
+    color: var(--text-dim);
+    margin-top: 4px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .sidebar nav { flex: 1; padding: 0 12px; }
+
+  .sidebar nav a {
+    display: block;
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: all 0.15s;
+    margin-bottom: 2px;
+    border-left: 2px solid transparent;
+  }
+
+  .sidebar nav a:hover {
+    color: var(--text-bright);
+    background: rgba(88,166,255,0.06);
+  }
+
+  .sidebar nav a.active {
+    color: var(--accent);
+    background: rgba(88,166,255,0.08);
+    border-left-color: var(--accent);
+  }
+
+  .sidebar nav .nav-group {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 16px 12px 6px;
+    opacity: 0.7;
+  }
+
+  .sidebar-footer {
+    padding: 16px 24px 0;
+    border-top: 1px solid var(--border);
+    margin-top: auto;
+    font-size: 11.5px;
+    color: var(--text-dim);
+  }
+
+  /* ── Main Content ─────────────────────────────────────────────── */
+  .main {
+    margin-left: var(--sidebar-w);
+    min-height: 100vh;
+  }
+
+  .content {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding: 48px 40px 120px;
+  }
+
+  /* ── Hero ──────────────────────────────────────────────────────── */
+  .hero {
+    padding-bottom: 36px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--accent2);
+    background: rgba(126,231,135,0.08);
+    border: 1px solid rgba(126,231,135,0.2);
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+
+  .hero h1 {
+    font-size: 38px;
+    font-weight: 800;
+    color: var(--heading);
+    letter-spacing: -1px;
+    line-height: 1.15;
+    margin-bottom: 16px;
+  }
+
+  .hero .subtitle {
+    font-size: 17px;
+    color: var(--text);
+    line-height: 1.7;
+    max-width: 640px;
+  }
+
+  .hero-meta {
+    display: flex;
+    gap: 24px;
+    margin-top: 20px;
+    font-size: 12.5px;
+    color: var(--text-dim);
+  }
+
+  .hero-meta span { display: flex; align-items: center; gap: 5px; }
+
+  /* ── Typography ───────────────────────────────────────────────── */
+  h2 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--heading);
+    letter-spacing: -0.5px;
+    margin: 56px 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    scroll-margin-top: 24px;
+  }
+
+  h3 {
+    font-size: 19px;
+    font-weight: 650;
+    color: var(--text-bright);
+    margin: 36px 0 12px;
+    letter-spacing: -0.2px;
+  }
+
+  h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent);
+    margin: 24px 0 8px;
+    font-family: var(--font-mono);
+  }
+
+  p { margin-bottom: 16px; }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  strong { color: var(--text-bright); font-weight: 600; }
+
+  /* ── Code ──────────────────────────────────────────────────────── */
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+    background: var(--bg-raised);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--cyan);
+    border: 1px solid var(--border);
+  }
+
+  pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 16px 0 24px;
+    line-height: 1.6;
+    position: relative;
+  }
+
+  pre code {
+    background: none;
+    padding: 0;
+    border: none;
+    color: var(--text);
+    font-size: 13px;
+  }
+
+  pre .label {
+    position: absolute;
+    top: 8px; right: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    opacity: 0.6;
+  }
+
+  /* Syntax tokens */
+  .kw { color: #ff7b72; }       /* keywords */
+  .fn { color: #d2a8ff; }       /* functions */
+  .st { color: #a5d6ff; }       /* strings */
+  .cm { color: #8b949e; font-style: italic; }  /* comments */
+  .ty { color: #7ee787; }       /* types */
+  .nu { color: #79c0ff; }       /* numbers */
+  .op { color: #ff7b72; }       /* operators */
+  .dc { color: #ffa657; }       /* decorators */
+
+  /* ── Callouts ─────────────────────────────────────────────────── */
+  .callout {
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0 24px;
+    border-left: 3px solid;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .callout.info {
+    background: rgba(88,166,255,0.06);
+    border-color: var(--accent);
+  }
+
+  .callout.warn {
+    background: rgba(210,153,34,0.06);
+    border-color: var(--orange);
+  }
+
+  .callout.critical {
+    background: rgba(248,81,73,0.06);
+    border-color: var(--red);
+  }
+
+  .callout.success {
+    background: rgba(126,231,135,0.06);
+    border-color: var(--accent2);
+  }
+
+  .callout-title {
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .callout.info .callout-title { color: var(--accent); }
+  .callout.warn .callout-title { color: var(--orange); }
+  .callout.critical .callout-title { color: var(--red); }
+  .callout.success .callout-title { color: var(--accent2); }
+
+  /* ── Tables ───────────────────────────────────────────────────── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0 24px;
+    font-size: 13.5px;
+  }
+
+  th {
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 600;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-dim);
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    color: var(--text);
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  td code {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  /* ── Diagrams (SVG containers) ────────────────────────────────── */
+  .diagram {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 32px 24px;
+    margin: 24px 0 28px;
+    overflow-x: auto;
+    text-align: center;
+  }
+
+  .diagram svg { max-width: 100%; height: auto; }
+
+  .diagram-caption {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: center;
+    margin-top: 12px;
+    font-style: italic;
+  }
+
+  /* ── File tree ────────────────────────────────────────────────── */
+  .file-tree {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-dim);
+    margin: 16px 0 24px;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .file-tree .dir { color: var(--accent); font-weight: 600; }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--text-dim); font-style: italic; }
+
+  /* ── Metric cards ─────────────────────────────────────────────── */
+  .metric-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin: 20px 0 28px;
+  }
+
+  .metric-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .metric-card .value {
+    font-size: 28px;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    letter-spacing: -1px;
+  }
+
+  .metric-card .label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+  }
+
+  .metric-card.green .value { color: var(--accent2); }
+  .metric-card.red .value { color: var(--red); }
+  .metric-card.blue .value { color: var(--accent); }
+
+  /* ── Lists ────────────────────────────────────────────────────── */
+  ul, ol {
+    margin: 8px 0 20px;
+    padding-left: 24px;
+  }
+
+  li {
+    margin-bottom: 6px;
+  }
+
+  li::marker { color: var(--text-dim); }
+
+  /* ── Horizontal Rule ──────────────────────────────────────────── */
+  hr {
+    border: none;
+    height: 1px;
+    background: var(--border);
+    margin: 48px 0;
+  }
+
+  /* ── Step blocks ──────────────────────────────────────────────── */
+  .step {
+    display: flex;
+    gap: 16px;
+    margin: 20px 0;
+    padding: 16px 20px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .step-num {
+    flex-shrink: 0;
+    width: 30px; height: 30px;
+    background: rgba(88,166,255,0.12);
+    border: 1px solid rgba(88,166,255,0.25);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    margin-top: 2px;
+  }
+
+  .step-content h4 {
+    margin: 0 0 4px;
+    color: var(--text-bright);
+    font-family: var(--font-sans);
+    font-size: 14.5px;
+  }
+
+  .step-content p {
+    margin: 0;
+    font-size: 13.5px;
+    color: var(--text);
+  }
+
+  /* ── Inline tag ───────────────────────────────────────────────── */
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.3px;
+    vertical-align: middle;
+  }
+
+  .tag.green { background: rgba(126,231,135,0.12); color: var(--accent2); }
+  .tag.red   { background: rgba(248,81,73,0.12); color: var(--red); }
+  .tag.blue  { background: rgba(88,166,255,0.12); color: var(--accent); }
+
+  /* ── Mobile ───────────────────────────────────────────────────── */
+  .mobile-header {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 52px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    z-index: 200;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+  }
+
+  .mobile-header button {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .mobile-header h1 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--heading);
+  }
+
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 99;
+  }
+
+  @media (max-width: 860px) {
+    .sidebar {
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+    }
+
+    .sidebar.open { transform: translateX(0); }
+    .overlay.open { display: block; }
+    .mobile-header { display: flex; }
+
+    .main {
+      margin-left: 0;
+      padding-top: 52px;
+    }
+
+    .content { padding: 24px 18px 80px; }
+    .hero h1 { font-size: 28px; }
+    h2 { font-size: 22px; }
+  }
+
+  /* ── Scrollbar ────────────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #484f58; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ MOBILE HEADER ══════════════════════════════ -->
+<div class="mobile-header">
+  <button onclick="toggleSidebar()" aria-label="Menu">☰</button>
+  <h1>Sentinel Docs</h1>
+</div>
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<!-- ═══════════════════ SIDEBAR ════════════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <h1>
+      <svg class="shield" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 15l-4-4 1.41-1.41L11 13.17l5.59-5.59L18 9l-7 7z"/></svg>
+      Sentinel
+    </h1>
+    <p>Engineering Knowledge Base</p>
+  </div>
+
+  <nav>
+    <div class="nav-group">Overview</div>
+    <a href="#what-is-sentinel">What is Sentinel</a>
+    <a href="#why-its-needed">Why It's Needed</a>
+    <a href="#what-makes-it-unique">What Makes It Unique</a>
+
+    <div class="nav-group">Deep Dive</div>
+    <a href="#how-it-works">How It Works</a>
+    <a href="#state-machine">The State Machine</a>
+    <a href="#sandbox">Sandbox & Security</a>
+    <a href="#verifier">The Verifier Gate</a>
+    <a href="#chaos-engineering">Chaos Engineering</a>
+    <a href="#recovery">Recovery & Rollback</a>
+    <a href="#git-role">The Role of Git & History</a>
+
+    <div class="nav-group">Architecture</div>
+    <a href="#backend-architecture">Backend Architecture</a>
+    <a href="#module-inventory">Module Inventory</a>
+    <a href="#data-flow">Data Flow</a>
+    <a href="#api-surface">API Surface</a>
+    <a href="#test-suite">Test Suite</a>
+  </nav>
+
+  <div class="sidebar-footer">
+    Last updated: Sep 27, 2026<br>
+    Version 0.1.0 · 38 tests passing
+  </div>
+</aside>
+
+<!-- ═══════════════════ MAIN CONTENT ══════════════════════════════ -->
+<div class="main">
+<div class="content">
+
+<!-- ── Hero ─────────────────────────────────────────────────────── -->
+<header class="hero">
+  <div class="hero-badge">🛡 Internal Documentation</div>
+  <h1>Sentinel</h1>
+  <p class="subtitle">
+    A deterministic reliability harness for AI coding agents. Sentinel wraps around any LLM-powered coding tool and independently verifies that it actually did what it claims — catching hallucinated completions, sandboxing unsafe operations, and automatically recovering from failures.
+  </p>
+  <div class="hero-meta">
+    <span>📄 ~4,060 lines of code</span>
+    <span>🧪 38 unit tests</span>
+    <span>📦 Zero external pip dependencies</span>
+    <span>🕐 Updated Sep 27, 2026</span>
+  </div>
+</header>
+
+<!-- ── Pill Navigation ──────────────────────────────────────────── -->
+<div class="pill-nav">
+  <a href="user-manual.html" class="pill">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    User Manual
+  </a>
+  <a href="demo-lab.html" class="pill pill-accent">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    Watch Demo Agent Loop
+  </a>
+</div>
+
+<style>
+  .pill-nav {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 48px;
+    flex-wrap: wrap;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
+    color: var(--text-bright);
+  }
+  .pill:hover {
+    background: rgba(88,166,255,0.08);
+    border-color: var(--accent);
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .pill-accent {
+    background: rgba(126,231,135,0.08);
+    border-color: rgba(126,231,135,0.3);
+    color: var(--accent2);
+  }
+  .pill-accent:hover {
+    background: rgba(126,231,135,0.15);
+    border-color: var(--accent2);
+    color: var(--accent2);
+  }
+</style>
+
+
+<!-- ═══════════════ SECTION: WHAT IS SENTINEL ═════════════════════ -->
+<h2 id="what-is-sentinel">What is Sentinel</h2>
+
+<p>
+  <strong>Sentinel is a verification and recovery layer that sits between an AI coding agent and the real world.</strong>
+  It ensures that when an agent says "I fixed the bug," the bug is actually fixed — by independently running the tests, inspecting the on-disk git diff, and rejecting false success claims.
+</p>
+
+<p>
+  Day-to-day, Sentinel does three things:
+</p>
+
+<ol>
+  <li><strong>Sandboxes</strong> every tool call the agent makes — file reads/writes are path-jailed to the workspace, shell commands are restricted to a strict whitelist (<code>pytest</code>, <code>python3</code>, <code>ls</code>, <code>cat</code>, <code>grep</code>), and environment variables containing API keys or credentials are stripped before any subprocess executes.</li>
+  <li><strong>Verifies</strong> task completion through a deterministic gate that combines real test execution (actual <code>pytest</code> exit code) with physical git diff analysis. The LLM's self-report is completely ignored.</li>
+  <li><strong>Recovers</strong> from failures automatically — rolling back the workspace via git, injecting diagnostic context into the agent's prompt, and retrying up to 3 times before tripping a circuit breaker.</li>
+</ol>
+
+<p>
+  The entire system is designed so that the parts that matter for safety — verification, sandboxing, checkpointing, recovery — are <strong>pure deterministic Python</strong>. The LLM is only involved in two places: generating a plan, and proposing tool calls. Everything else is code we control.
+</p>
+
+<div class="callout success">
+  <div class="callout-title">Key Result</div>
+  Under controlled chaos fault injection, raw AI agents produce <strong>0% task success</strong> with <strong>100% false success claims</strong>. With Sentinel wrapping the same agent, task success rises to <strong>100%</strong> with <strong>0% false claims</strong>.
+</div>
+
+
+<!-- ═══════════════ SECTION: WHY IT'S NEEDED ══════════════════════ -->
+<h2 id="why-its-needed">Why It's Needed</h2>
+
+<h3>The Problem: AI Agents Lie About Their Work</h3>
+
+<p>
+  AI coding agents (Copilot, Cursor, Aider, SWE-agent) can generate code. But they have a dangerous pattern: <strong>they report success even when they fail</strong>. This is called a <em>hallucinated completion</em> or <em>false success claim</em>.
+</p>
+
+<p>The agent genuinely believes it solved the problem, but in reality:</p>
+
+<ul>
+  <li>The code it wrote has a syntax error (output was truncated mid-generation)</li>
+  <li>It edited the wrong file entirely</li>
+  <li>The tests still fail on disk</li>
+  <li>It didn't actually change anything at all — but said "Done!"</li>
+</ul>
+
+<h3>Scale of the Problem</h3>
+
+<div class="metric-row">
+  <div class="metric-card red">
+    <div class="value">10–20%</div>
+    <div class="label">False claim rate<br>Large models (GPT-4, Claude)</div>
+  </div>
+  <div class="metric-card red">
+    <div class="value">60–80%</div>
+    <div class="label">False claim rate<br>Small models (3B–8B params)</div>
+  </div>
+  <div class="metric-card green">
+    <div class="value">0%</div>
+    <div class="label">False claim rate<br>With Sentinel harness</div>
+  </div>
+</div>
+
+<h3>What Existed Before</h3>
+
+<p>
+  Before Sentinel, the only options were:
+</p>
+
+<ul>
+  <li><strong>Trust the agent</strong> — accept its self-report and manually review the output. Doesn't scale, and developers miss subtle bugs.</li>
+  <li><strong>Use expensive models</strong> — pay 10–50× more for GPT-4/Claude to reduce (but not eliminate) hallucination rates.</li>
+  <li><strong>Prompt engineering</strong> — ask the model "are you sure?" or add chain-of-thought reasoning. Helps marginally. Does not produce ground truth.</li>
+</ul>
+
+<p>
+  None of these provide <strong>deterministic proof</strong> that the task was completed. Sentinel does.
+</p>
+
+
+<!-- ═══════════════ SECTION: WHAT MAKES IT UNIQUE ═════════════════ -->
+<h2 id="what-makes-it-unique">What Makes It Unique</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Property</th>
+      <th>Sentinel</th>
+      <th>Typical Agent Frameworks</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Verification method</strong></td>
+      <td>Real test execution + physical git diff</td>
+      <td>LLM self-evaluation ("Does this look correct?")</td>
+    </tr>
+    <tr>
+      <td><strong>Recovery on failure</strong></td>
+      <td>Atomic git rollback + checkpoint restore + bounded retry</td>
+      <td>Ask the LLM to "try again" (no workspace cleanup)</td>
+    </tr>
+    <tr>
+      <td><strong>State management</strong></td>
+      <td>Externalized <code>TaskState</code> dataclass on disk — survives process crashes</td>
+      <td>State lives in LLM context window — lost on crash</td>
+    </tr>
+    <tr>
+      <td><strong>Safety boundary</strong></td>
+      <td>Command whitelist + path jail + credential stripping + optional Docker</td>
+      <td>None, or prompt-level "please don't run dangerous commands"</td>
+    </tr>
+    <tr>
+      <td><strong>External dependencies</strong></td>
+      <td>Zero pip packages for core (stdlib <code>urllib</code>, <code>subprocess</code>, <code>json</code>)</td>
+      <td>openai, langchain, requests, etc.</td>
+    </tr>
+    <tr>
+      <td><strong>Chaos testing</strong></td>
+      <td>Built-in seeded fault injection for reproducible benchmarks</td>
+      <td>Not applicable</td>
+    </tr>
+    <tr>
+      <td><strong>Model requirement</strong></td>
+      <td>Works with 1.5B–8B parameter models (designed for small/open-weight)</td>
+      <td>Typically requires GPT-4 class models</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout info">
+  <div class="callout-title">Core Thesis</div>
+  You don't need a smarter model. You need smarter <strong>scaffolding around</strong> the model. Sentinel makes cheap, small, open-weight LLMs produce enterprise-grade reliability through deterministic verification, not better prompting.
+</div>
+
+
+<!-- ═══════════════ SECTION: HOW IT WORKS ═════════════════════════ -->
+<h2 id="how-it-works">How It Works Under the Hood</h2>
+
+<p>
+  Sentinel's engine is a Python state machine that drives a <code>TaskState</code> object through a fixed set of stages. The LLM is a <em>component</em> inside this loop — not the driver of it.
+</p>
+
+<h3 id="state-machine">The State Machine</h3>
+
+<div class="diagram">
+  <svg viewBox="0 0 700 340" xmlns="http://www.w3.org/2000/svg" style="font-family: var(--font-mono); max-width: 680px;">
+    <!-- Nodes -->
+    <rect x="20" y="30" width="120" height="50" rx="8" fill="#161b22" stroke="#30363d"/>
+    <text x="80" y="60" text-anchor="middle" fill="#c9d1d9" font-size="13" font-weight="600">PLANNING</text>
+
+    <rect x="190" y="30" width="120" height="50" rx="8" fill="#161b22" stroke="#30363d"/>
+    <text x="250" y="60" text-anchor="middle" fill="#c9d1d9" font-size="13" font-weight="600">EXECUTING</text>
+
+    <rect x="360" y="30" width="120" height="50" rx="8" fill="#161b22" stroke="#30363d"/>
+    <text x="420" y="60" text-anchor="middle" fill="#c9d1d9" font-size="13" font-weight="600">VERIFYING</text>
+
+    <rect x="555" y="10" width="100" height="40" rx="8" fill="rgba(126,231,135,0.15)" stroke="#7ee787"/>
+    <text x="605" y="35" text-anchor="middle" fill="#7ee787" font-size="13" font-weight="700">DONE ✓</text>
+
+    <rect x="360" y="180" width="120" height="50" rx="8" fill="rgba(248,81,73,0.08)" stroke="#f85149" stroke-dasharray="4"/>
+    <text x="420" y="210" text-anchor="middle" fill="#f85149" font-size="13" font-weight="600">RECOVERING</text>
+
+    <rect x="555" y="180" width="100" height="40" rx="8" fill="rgba(248,81,73,0.15)" stroke="#f85149"/>
+    <text x="605" y="205" text-anchor="middle" fill="#f85149" font-size="13" font-weight="700">FAILED ✗</text>
+
+    <!-- Arrows -->
+    <line x1="140" y1="55" x2="190" y2="55" stroke="#58a6ff" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="310" y1="55" x2="360" y2="55" stroke="#58a6ff" stroke-width="2" marker-end="url(#arrow)"/>
+
+    <!-- Verify → Done -->
+    <line x1="480" y1="40" x2="555" y2="30" stroke="#7ee787" stroke-width="2" marker-end="url(#arrowG)"/>
+    <text x="517" y="25" text-anchor="middle" fill="#7ee787" font-size="10">passed</text>
+
+    <!-- Verify → Recovering -->
+    <line x1="420" y1="80" x2="420" y2="180" stroke="#f85149" stroke-width="2" marker-end="url(#arrowR)"/>
+    <text x="433" y="135" fill="#f85149" font-size="10">failed</text>
+
+    <!-- Recovering → Executing (curved) -->
+    <path d="M 360 205 Q 160 205 190 75" fill="none" stroke="#d29922" stroke-width="2" stroke-dasharray="6" marker-end="url(#arrowO)"/>
+    <text x="210" y="170" fill="#d29922" font-size="10">retry / replan</text>
+
+    <!-- Recovering → Failed -->
+    <line x1="480" y1="200" x2="555" y2="200" stroke="#f85149" stroke-width="2" marker-end="url(#arrowR)"/>
+    <text x="517" y="192" text-anchor="middle" fill="#f85149" font-size="10">abort</text>
+
+    <!-- Labels under nodes -->
+    <text x="80" y="100" text-anchor="middle" fill="#8b949e" font-size="10">LLM generates</text>
+    <text x="80" y="112" text-anchor="middle" fill="#8b949e" font-size="10">2-4 step plan</text>
+
+    <text x="250" y="100" text-anchor="middle" fill="#8b949e" font-size="10">LLM proposes</text>
+    <text x="250" y="112" text-anchor="middle" fill="#8b949e" font-size="10">tool calls</text>
+
+    <text x="420" y="100" text-anchor="middle" fill="#8b949e" font-size="10">Python runs tests</text>
+    <text x="420" y="112" text-anchor="middle" fill="#8b949e" font-size="10">+ checks git diff</text>
+
+    <text x="420" y="250" text-anchor="middle" fill="#8b949e" font-size="10">git rollback +</text>
+    <text x="420" y="262" text-anchor="middle" fill="#8b949e" font-size="10">checkpoint restore</text>
+
+    <!-- Markers -->
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#58a6ff"/></marker>
+      <marker id="arrowG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#7ee787"/></marker>
+      <marker id="arrowR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#f85149"/></marker>
+      <marker id="arrowO" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#d29922"/></marker>
+    </defs>
+  </svg>
+  <div class="diagram-caption">Fig 1. Sentinel orchestrator state machine. The LLM participates only in PLANNING and EXECUTING. All other transitions are deterministic Python logic.</div>
+</div>
+
+<p>
+  The orchestrator (<code>agent/orchestrator.py</code>) drives this loop with a hard <code>max_loop_ticks=30</code> safety cap. Even if the recovery logic has a bug, the loop physically cannot iterate more than 30 times.
+</p>
+
+<h3><code>TaskState</code> — The Single Source of Truth</h3>
+
+<p>
+  Every component reads from and writes to one dataclass. Nothing lives exclusively inside the LLM's context window:
+</p>
+
+<pre><code><span class="dc">@dataclass</span>
+<span class="kw">class</span> <span class="ty">TaskState</span>:
+    task_id: <span class="ty">str</span>                        <span class="cm"># e.g. "task_001"</span>
+    workspace_path: <span class="ty">str</span>                 <span class="cm"># isolated git worktree path</span>
+    instruction: <span class="ty">str</span>                    <span class="cm"># "Fix the auth bug..."</span>
+    plan: <span class="ty">list[str]</span>                     <span class="cm"># ["Read auth.py", "Write fix", "Run tests"]</span>
+    current_step_index: <span class="ty">int</span>             <span class="cm"># which plan step we're on</span>
+    tool_call_log: <span class="ty">list[dict]</span>           <span class="cm"># full history of every tool invocation</span>
+    attempt_count: <span class="ty">int</span>                  <span class="cm"># retries so far (0, 1, 2)</span>
+    injected_fault: <span class="ty">str | None</span>          <span class="cm"># "truncated_diff" or None</span>
+    verifier_result: <span class="ty">dict | None</span>        <span class="cm"># verifier's structured verdict</span>
+    status: <span class="ty">str</span>                         <span class="cm"># "planning" | "executing" | "verifying" | ...</span>
+    model_used: <span class="ty">str</span>                     <span class="cm"># "local" | "frontier"</span>
+    checkpoint_id: <span class="ty">str | None</span>           <span class="cm"># last saved checkpoint name</span></code><span class="label">core/types.py</span></pre>
+
+<p>
+  This is JSON-serializable via <code>to_json()</code> / <code>from_json()</code>. If the process crashes, we reload from the last checkpoint file and continue exactly where we left off.
+</p>
+
+
+<!-- ═══════════════ SECTION: SANDBOX ══════════════════════════════ -->
+<h3 id="sandbox">Sandbox & Security</h3>
+
+<p>
+  The agent interacts with the filesystem through exactly <strong>four tool functions</strong>. Every call passes through two security layers:
+</p>
+
+<h4>Layer 1: Path Jail</h4>
+
+<p>
+  Every file path the agent provides is resolved to an absolute path and checked against the workspace root:
+</p>
+
+<pre><code><span class="kw">def</span> <span class="fn">_resolve_in_workspace</span>(path: <span class="ty">str</span>, workspace_path: <span class="ty">str</span>) -> <span class="ty">str</span>:
+    target_real = os.path.realpath(os.path.join(workspace_path, path))
+    ws_real     = os.path.realpath(workspace_path)
+    <span class="kw">if</span> os.path.commonpath([target_real, ws_real]) != ws_real:
+        <span class="kw">raise</span> <span class="ty">SandboxViolation</span>(<span class="st">f"Path '{path}' escapes workspace"</span>)
+    <span class="kw">return</span> target_real</code><span class="label">sandbox/tools.py</span></pre>
+
+<p>This catches:</p>
+<ul>
+  <li><code>../../etc/passwd</code> — relative traversal</li>
+  <li><code>/root/.ssh/id_rsa</code> — absolute paths outside workspace</li>
+  <li>Symlink escapes — <code>realpath()</code> resolves symlinks before the check</li>
+</ul>
+
+<h4>Layer 2: Command Whitelist</h4>
+
+<pre><code>ALLOWED_COMMANDS = {<span class="st">"pytest"</span>, <span class="st">"python3"</span>, <span class="st">"ls"</span>, <span class="st">"cat"</span>, <span class="st">"grep"</span>}</code><span class="label">sandbox/executor_sandbox.py</span></pre>
+
+<p>
+  The <em>first token</em> of any shell command is checked against this set. If the agent tries <code>rm -rf /</code>, <code>curl</code>, <code>wget</code>, <code>powershell</code>, or anything else — a <code>ToolExecutionError</code> is raised <strong>before a single byte of the command executes</strong>.
+</p>
+
+<h4>Environment Sanitization</h4>
+
+<p>
+  Before any subprocess spawns, Sentinel strips all environment variables matching sensitive prefixes:
+</p>
+
+<pre><code>SENSITIVE_ENV_PREFIXES = (
+    <span class="st">"AWS_"</span>, <span class="st">"GITHUB_"</span>, <span class="st">"OPENAI_"</span>, <span class="st">"ANTHROPIC_"</span>,
+    <span class="st">"SSH_"</span>, <span class="st">"AZURE_"</span>, <span class="st">"GCP_"</span>, <span class="st">"GOOGLE_"</span>,
+    <span class="st">"TOKEN"</span>, <span class="st">"SECRET"</span>, <span class="st">"KEY"</span>, <span class="st">"PASSWORD"</span>, <span class="st">"CREDENTIAL"</span>,
+)</code><span class="label">sandbox/executor_sandbox.py</span></pre>
+
+<p>
+  The agent never sees your API keys, cloud credentials, or SSH keys — even in the fallback host subprocess mode.
+</p>
+
+
+<!-- ═══════════════ SECTION: VERIFIER ═════════════════════════════ -->
+<h3 id="verifier">The Verifier Gate</h3>
+
+<p>
+  This is the component that catches lying agents. The verification formula is absolute:
+</p>
+
+<pre><code>passed = (test_exit_code == <span class="nu">0</span>) <span class="kw">and</span> (<span class="kw">not</span> timed_out) <span class="kw">and</span> (diff_valid)</code><span class="label">verifier/verifier.py</span></pre>
+
+<p><strong>All three conditions must be true:</strong></p>
+
+<table>
+  <thead><tr><th>Check</th><th>What it verifies</th><th>What it catches</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>test_exit_code == 0</code></td>
+      <td>Real <code>pytest</code> passes inside sandbox</td>
+      <td>Agent claiming fix when tests still fail</td>
+    </tr>
+    <tr>
+      <td><code>not timed_out</code></td>
+      <td>Tests completed within timeout</td>
+      <td>Infinite loops, hanging processes</td>
+    </tr>
+    <tr>
+      <td><code>diff_valid</code></td>
+      <td>Git diff is non-empty AND within expected file boundary</td>
+      <td>Zero-change hallucinations, unauthorized file edits</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  The diff analyzer (<code>verifier/diff_analyzer.py</code>) runs <code>git diff HEAD</code>, filters out <code>.pyc</code> and <code>__pycache__</code> noise, and validates that only the expected files were touched.
+</p>
+
+
+<!-- ═══════════════ SECTION: CHAOS ════════════════════════════════ -->
+<h3 id="chaos-engineering">Chaos Engineering</h3>
+
+<p>
+  Sentinel doesn't just run tasks — it deliberately <strong>breaks things</strong> to prove the recovery system works. The <code>FailureInjector</code> uses a fixed <code>random.Random(seed=42)</code> so every benchmark run produces identical faults.
+</p>
+
+<table>
+  <thead><tr><th>Fault Type</th><th>What It Does</th><th>What It Simulates</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>TRUNCATED_DIFF</code></td>
+      <td>Cuts file content to 50% before writing to disk</td>
+      <td>Context window overflow / output truncation</td>
+    </tr>
+    <tr>
+      <td><code>SYNTAX_CORRUPT</code></td>
+      <td>Prepends <code>class _Broken(((:</code> to the file</td>
+      <td>Malformed LLM output</td>
+    </tr>
+    <tr>
+      <td><code>TOOL_TIMEOUT</code></td>
+      <td>Replaces command with <code>sleep 5</code>, timeout = 1s</td>
+      <td>Network/tool infrastructure failures</td>
+    </tr>
+    <tr>
+      <td><code>FLAKY_TEST</code></td>
+      <td>Replaces command with <code>sys.exit(1)</code></td>
+      <td>Non-deterministic test failures</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  Faults are injected <em>between</em> the LLM's output and the sandbox — the agent proposes a correct write, but Sentinel's chaos engine corrupts it before it hits disk. This tests whether the verifier + recovery loop can catch and fix the corruption.
+</p>
+
+
+<!-- ═══════════════ SECTION: RECOVERY ═════════════════════════════ -->
+<h3 id="recovery">Recovery & Rollback</h3>
+
+<p>
+  When verification fails, the <code>RecoveryController</code> evaluates the failure and decides:
+</p>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <h4>ABORT_FAIL <span class="tag red">circuit breaker</span></h4>
+    <p>If <code>attempt_count >= max_attempts</code> (default 3) — stop immediately. Prevents infinite retry loops and unbounded token consumption.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <h4>ESCALATE <span class="tag blue">model switch</span></h4>
+    <p>If on the final attempt AND using a local model — switch to a cloud/frontier model (Groq) for one last attempt with a more capable LLM.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-content">
+    <h4>REPLAN <span class="tag green">strategy change</span></h4>
+    <p>If the error mentions "unauthorized files" or "boundary violation" — the agent's plan was wrong. Insert a diagnostic step into the plan.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-content">
+    <h4>RETRY <span class="tag green">try again</span></h4>
+    <p>Default action: Roll back workspace (<code>git checkout -- .</code> + <code>git clean -fd</code>), restore checkpoint state, inject test failure diagnostics into the next prompt, and re-execute the plan from step 0.</p>
+  </div>
+</div>
+
+<p>
+  The rollback is atomic: the checkpoint system saves <code>TaskState</code> to JSON after every step, and the git worktree revert wipes all dirty changes. The retried execution starts from a perfectly clean state.
+</p>
+
+
+<!-- ═══════════════ SECTION: GIT & AUDIT HISTORY ══════════════════ -->
+<h3 id="git-role">The Role of Git & Audit History</h3>
+
+<p>
+  A common question is: <em>What exactly is Git doing in Sentinel, and can we actually connect to its internal repositories to visually see the commits and rollbacks?</em>
+</p>
+
+<p>
+  In Sentinel, <strong>Git is not just version control — it is the physical filesystem isolation and transaction engine</strong>. While the LLM operates in an abstract space of prompts and tokens, Git is what anchors every action to concrete disk reality.
+</p>
+
+<h4>The 4 Core Responsibilities of Git</h4>
+
+<table>
+  <thead>
+    <tr>
+      <th>Git Operation</th>
+      <th>Code Location</th>
+      <th>Why It Is Critical</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>git worktree add --detach</code></td>
+      <td><code>sandbox/workspace.py</code></td>
+      <td><strong>Zero-Copy Isolation:</strong> Creates a detached workspace pointing at the exact <code>base_commit</code>. The primary repository stays 100% immutable. Multiple tasks run simultaneously on the same host without cloning or disk bloat.</td>
+    </tr>
+    <tr>
+      <td><code>git add -N .</code></td>
+      <td><code>verifier/diff_analyzer.py</code></td>
+      <td><strong>Untracked File Indexing:</strong> When an agent creates a new file, standard <code>git diff</code> ignores it! <code>git add -N</code> (intent-to-add) indexes untracked files into Git without staging their contents, making new files instantly visible to the diff engine.</td>
+    </tr>
+    <tr>
+      <td><code>git diff &lt;base_commit&gt;</code></td>
+      <td><code>verifier/diff_analyzer.py</code></td>
+      <td><strong>Ground-Truth Verification:</strong> Extracts the exact modifications made by the agent. Analyzes insertions, deletions, modified files, and enforces file boundary rules (e.g. rejecting edits to unauthorized files or tests).</td>
+    </tr>
+    <tr>
+      <td><code>git checkout -- .</code> + <code>clean -fd</code></td>
+      <td><code>core/checkpoint.py</code></td>
+      <td><strong>Physical Rollback:</strong> When verification fails, this wipes all corrupted code, truncated files, and junk untracked files in milliseconds. Leaves the workspace in a pristine baseline state before retry.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4>TaskState Checkpoints vs. Git Commits</h4>
+
+<p>
+  It is important to distinguish between the two layers of state in Sentinel:
+</p>
+
+<ul>
+  <li><strong>TaskState JSON Snapshots</strong> (<code>core/checkpoint.py</code>): Stores the internal Python memory — which plan step we are on, prompt history, retry counters, model used, and verifier feedback.</li>
+  <li><strong>Git Commits</strong> (<code>git_commit_step()</code>): Records the physical repository state on disk so that every phase of agent work leaves an immutable audit trail.</li>
+</ul>
+
+<div class="callout info">
+  <div class="callout-title">Commit-Per-Step Audit Trail</div>
+  When step-level git commits are enabled, the internal workspace builds a complete, human-readable commit log for every phase:
+  <pre><code>* 8f4a21d - [sentinel] Verifier PASSED: all tests ok (exit code 0) | attempt 1
+* 3b19c4e - [sentinel] Executed step 2: Run test suite | attempt 1
+* a712e09 - [sentinel] Executed step 1: Write clean bugfix to auth.py | attempt 1
+* 5e89d12 - [sentinel] Rollback to clean state after verifier failure (retry: test failed)
+* 9c2b4f1 - [sentinel] Verifier FAILED: exit code 1 (SyntaxError) | attempt 0
+* 1d4a872 - [sentinel] Executed step 1: Write fix (corrupted by chaos fault) | attempt 0
+* f023a8b - [sentinel] Plan created (3 steps) | attempt 0
+* d498e21 - Initial buggy commit for Auth Token Expiration Fix</code></pre>
+</div>
+
+<h4>Can You Connect to Remote Repositories & Inspect Visually?</h4>
+
+<p>
+  <strong>Yes, absolutely.</strong> Because each task workspace is a 100% standard Git repository created on your filesystem, you can view and interact with it in three ways:
+</p>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <h4>Local Visual Inspection (VS Code, GitLens, or Terminal)</h4>
+    <p>
+      Every run creates an active Git directory at:
+      <br>
+      <code>Windows: %TEMP%\sentinel-runs\&lt;task_id&gt;\workspace</code>
+      <br>
+      <code>Linux/macOS: /tmp/sentinel-runs/&lt;task_id&gt;/workspace</code>
+      <br><br>
+      You can open that folder directly in <strong>VS Code</strong> or any visual Git tool (GitLens, Sublime Merge, Sourcetree). You can immediately see the graph of commits, open each commit to see the red/green side-by-side diff, inspect the corrupted file from attempt 0, and view the clean fix from attempt 1.
+    </p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <h4>Pushing Internal Task Repos to Remote GitHub / GitLab</h4>
+    <p>
+      You can connect Sentinel's internal repository to any remote GitHub repository with a single remote push hook:
+    </p>
+    <pre><code><span class="cm"># Add remote and push the task's execution branch to GitHub</span>
+git -C /tmp/sentinel-runs/task_01/workspace remote add origin git@github.com:your-org/sentinel-runs.git
+git -C /tmp/sentinel-runs/task_01/workspace push -u origin HEAD:run-task-01-audit</code></pre>
+    <p>
+      On GitHub, you can navigate to the branch <code>run-task-01-audit</code>, click <strong>Commits</strong>, and visually browse the exact historical timeline of the agent's work, including the failure and automated rollback!
+    </p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-content">
+    <h4>Embedded Web Dashboard Diff & History API</h4>
+    <p>
+      Sentinel's server provides the <code>GET /api/runs/{id}/diff</code> endpoint and <code>get_git_history()</code> helper. This allows the frontend dashboard to display an interactive, visual Git commit tree and syntax-highlighted diff viewer directly in the browser without leaving the UI.
+    </p>
+  </div>
+</div>
+
+
+
+
+<!-- ═══════════════ SECTION: BACKEND ARCHITECTURE ═════════════════ -->
+<h2 id="backend-architecture">Backend Architecture</h2>
+
+<p>
+  The backend is organized into four layers, with strict dependency direction: each layer only imports from layers below it.
+</p>
+
+<div class="diagram">
+  <svg viewBox="0 0 720 500" xmlns="http://www.w3.org/2000/svg" style="font-family: var(--font-mono); max-width: 700px;">
+    <!-- Layer 4 -->
+    <rect x="10" y="10" width="700" height="70" rx="10" fill="none" stroke="#30363d" stroke-dasharray="4"/>
+    <text x="25" y="32" fill="#8b949e" font-size="10" font-weight="700">LAYER 4 — USER INTERFACES</text>
+    <rect x="30" y="40" width="180" height="30" rx="6" fill="rgba(88,166,255,0.1)" stroke="#58a6ff"/>
+    <text x="120" y="60" text-anchor="middle" fill="#58a6ff" font-size="11" font-weight="600">server/api.py (FastAPI+SSE)</text>
+    <rect x="230" y="40" width="140" height="30" rx="6" fill="rgba(88,166,255,0.1)" stroke="#58a6ff"/>
+    <text x="300" y="60" text-anchor="middle" fill="#58a6ff" font-size="11" font-weight="600">cli/demo.py</text>
+
+    <!-- Layer 3 -->
+    <rect x="10" y="100" width="700" height="70" rx="10" fill="none" stroke="#30363d" stroke-dasharray="4"/>
+    <text x="25" y="122" fill="#8b949e" font-size="10" font-weight="700">LAYER 3 — EVALUATION</text>
+    <rect x="30" y="130" width="160" height="30" rx="6" fill="rgba(210,168,255,0.1)" stroke="#d2a8ff"/>
+    <text x="110" y="150" text-anchor="middle" fill="#d2a8ff" font-size="11" font-weight="600">benchmark/runner.py</text>
+    <rect x="210" y="130" width="170" height="30" rx="6" fill="rgba(210,168,255,0.1)" stroke="#d2a8ff"/>
+    <text x="295" y="150" text-anchor="middle" fill="#d2a8ff" font-size="11" font-weight="600">benchmark/scorecard.py</text>
+    <rect x="400" y="130" width="150" height="30" rx="6" fill="rgba(210,168,255,0.1)" stroke="#d2a8ff"/>
+    <text x="475" y="150" text-anchor="middle" fill="#d2a8ff" font-size="11" font-weight="600">benchmark/tasks.py</text>
+
+    <!-- Layer 2 -->
+    <rect x="10" y="190" width="700" height="80" rx="10" fill="none" stroke="#30363d" stroke-dasharray="4"/>
+    <text x="25" y="212" fill="#8b949e" font-size="10" font-weight="700">LAYER 2 — AGENT LOOP</text>
+    <rect x="30" y="225" width="160" height="30" rx="6" fill="rgba(255,166,87,0.1)" stroke="#ffa657"/>
+    <text x="110" y="245" text-anchor="middle" fill="#ffa657" font-size="11" font-weight="600">agent/orchestrator.py</text>
+    <rect x="210" y="225" width="130" height="30" rx="6" fill="rgba(255,166,87,0.1)" stroke="#ffa657"/>
+    <text x="275" y="245" text-anchor="middle" fill="#ffa657" font-size="11" font-weight="600">agent/planner.py</text>
+    <rect x="360" y="225" width="140" height="30" rx="6" fill="rgba(255,166,87,0.1)" stroke="#ffa657"/>
+    <text x="430" y="245" text-anchor="middle" fill="#ffa657" font-size="11" font-weight="600">agent/executor.py</text>
+    <rect x="520" y="225" width="170" height="30" rx="6" fill="rgba(255,166,87,0.1)" stroke="#ffa657"/>
+    <text x="605" y="245" text-anchor="middle" fill="#ffa657" font-size="11" font-weight="600">agent/model_adapter.py</text>
+
+    <!-- Layer 1 -->
+    <rect x="10" y="290" width="700" height="80" rx="10" fill="none" stroke="#30363d" stroke-dasharray="4"/>
+    <text x="25" y="312" fill="#8b949e" font-size="10" font-weight="700">LAYER 1 — DETERMINISTIC SCAFFOLDING</text>
+    <rect x="30" y="325" width="130" height="28" rx="6" fill="rgba(126,231,135,0.1)" stroke="#7ee787"/>
+    <text x="95" y="344" text-anchor="middle" fill="#7ee787" font-size="10.5" font-weight="600">core/checkpoint</text>
+    <rect x="170" y="325" width="110" height="28" rx="6" fill="rgba(126,231,135,0.1)" stroke="#7ee787"/>
+    <text x="225" y="344" text-anchor="middle" fill="#7ee787" font-size="10.5" font-weight="600">core/recovery</text>
+    <rect x="290" y="325" width="90" height="28" rx="6" fill="rgba(126,231,135,0.1)" stroke="#7ee787"/>
+    <text x="335" y="344" text-anchor="middle" fill="#7ee787" font-size="10.5" font-weight="600">core/trace</text>
+    <rect x="390" y="325" width="120" height="28" rx="6" fill="rgba(126,231,135,0.1)" stroke="#7ee787"/>
+    <text x="450" y="344" text-anchor="middle" fill="#7ee787" font-size="10.5" font-weight="600">sandbox/tools</text>
+    <rect x="520" y="325" width="80" height="28" rx="6" fill="rgba(126,231,135,0.1)" stroke="#7ee787"/>
+    <text x="560" y="344" text-anchor="middle" fill="#7ee787" font-size="10.5" font-weight="600">verifier</text>
+    <rect x="610" y="325" width="85" height="28" rx="6" fill="rgba(126,231,135,0.1)" stroke="#7ee787"/>
+    <text x="652" y="344" text-anchor="middle" fill="#7ee787" font-size="10.5" font-weight="600">chaos/inj</text>
+
+    <!-- Layer 0 -->
+    <rect x="10" y="390" width="700" height="70" rx="10" fill="none" stroke="#30363d" stroke-dasharray="4"/>
+    <text x="25" y="412" fill="#8b949e" font-size="10" font-weight="700">LAYER 0 — PRIMITIVES</text>
+    <rect x="30" y="422" width="120" height="28" rx="6" fill="rgba(57,212,230,0.1)" stroke="#39d4e6"/>
+    <text x="90" y="441" text-anchor="middle" fill="#39d4e6" font-size="10.5" font-weight="600">core/types.py</text>
+    <rect x="170" y="422" width="130" height="28" rx="6" fill="rgba(57,212,230,0.1)" stroke="#39d4e6"/>
+    <text x="235" y="441" text-anchor="middle" fill="#39d4e6" font-size="10.5" font-weight="600">chaos/faults.py</text>
+    <rect x="320" y="422" width="150" height="28" rx="6" fill="rgba(57,212,230,0.1)" stroke="#39d4e6"/>
+    <text x="395" y="441" text-anchor="middle" fill="#39d4e6" font-size="10.5" font-weight="600">sandbox/exceptions</text>
+    <rect x="490" y="422" width="160" height="28" rx="6" fill="rgba(57,212,230,0.1)" stroke="#39d4e6"/>
+    <text x="570" y="441" text-anchor="middle" fill="#39d4e6" font-size="10.5" font-weight="600">sandbox/workspace</text>
+
+    <!-- Direction arrow -->
+    <text x="680" y="480" fill="#8b949e" font-size="10" text-anchor="end">↑ imports flow upward only</text>
+  </svg>
+  <div class="diagram-caption">Fig 2. Four-layer architecture. Each layer only imports from layers below. The LLM (model_adapter) sits in Layer 2 — not at the top.</div>
+</div>
+
+
+<h3 id="module-inventory">Module Inventory</h3>
+
+<div class="file-tree"><span class="dir">sentinel/</span>
+├── __init__.py              <span class="note">(6 lines)   version = "0.1.0"</span>
+│
+├── <span class="dir">core/</span>                    <span class="note">── Foundation ──</span>
+│   ├── <span class="file">types.py</span>             <span class="note">(61 lines)  TaskState dataclass</span>
+│   ├── <span class="file">checkpoint.py</span>        <span class="note">(119 lines) atomic JSON snapshots + git rollback</span>
+│   ├── <span class="file">recovery.py</span>          <span class="note">(119 lines) circuit breaker + recovery decisions</span>
+│   └── <span class="file">trace.py</span>             <span class="note">(69 lines)  append-only JSONL audit logger</span>
+│
+├── <span class="dir">agent/</span>                   <span class="note">── AI Layer ──</span>
+│   ├── <span class="file">model_adapter.py</span>     <span class="note">(187 lines) Mock + Groq + Ollama adapters</span>
+│   ├── <span class="file">planner.py</span>           <span class="note">(77 lines)  LLM → 2-4 step plan</span>
+│   ├── <span class="file">executor.py</span>          <span class="note">(155 lines) LLM → tool call → sandbox</span>
+│   └── <span class="file">orchestrator.py</span>      <span class="note">(165 lines) master state machine loop</span>
+│
+├── <span class="dir">sandbox/</span>                 <span class="note">── Security ──</span>
+│   ├── <span class="file">exceptions.py</span>        <span class="note">(20 lines)  SandboxViolation, ToolExecutionError</span>
+│   ├── <span class="file">workspace.py</span>         <span class="note">(129 lines) git worktree isolation</span>
+│   ├── <span class="file">executor_sandbox.py</span>  <span class="note">(270 lines) command whitelist + Docker jail</span>
+│   └── <span class="file">tools.py</span>             <span class="note">(162 lines) read_file, write_file, run_shell, run_tests</span>
+│
+├── <span class="dir">verifier/</span>                <span class="note">── Truth Gate ──</span>
+│   ├── <span class="file">diff_analyzer.py</span>     <span class="note">(138 lines) git diff parser + boundary check</span>
+│   └── <span class="file">verifier.py</span>          <span class="note">(82 lines)  test_pass AND diff_valid = truth</span>
+│
+├── <span class="dir">chaos/</span>                   <span class="note">── Chaos Engineering ──</span>
+│   ├── <span class="file">faults.py</span>            <span class="note">(16 lines)  FaultClass enum</span>
+│   └── <span class="file">injector.py</span>          <span class="note">(103 lines) seeded fault injection engine</span>
+│
+├── <span class="dir">benchmark/</span>               <span class="note">── Evaluation ──</span>
+│   ├── <span class="file">tasks.py</span>             <span class="note">(129 lines) 3 realistic bug-fix tasks</span>
+│   ├── <span class="file">runner.py</span>            <span class="note">(250 lines) head-to-head raw vs sentinel</span>
+│   └── <span class="file">scorecard.py</span>         <span class="note">(97 lines)  metrics aggregation + ASCII table</span>
+│
+├── <span class="dir">server/</span>                  <span class="note">── Web API ──</span>
+│   └── <span class="file">api.py</span>               <span class="note">(555 lines) FastAPI REST + SSE streaming</span>
+│
+├── <span class="dir">cli/</span>                     <span class="note">── Terminal ──</span>
+│   └── <span class="file">demo.py</span>              <span class="note">(61 lines)  live demo runner</span>
+│
+└── <span class="dir">tests/</span>                   <span class="note">── 38 unit tests, 1,260 lines ──</span>
+    ├── <span class="file">test_state_and_checkpoint.py</span>
+    ├── <span class="file">test_recovery_controller.py</span>
+    ├── <span class="file">test_sandbox_isolation.py</span>
+    ├── <span class="file">test_tool_whitelist.py</span>
+    ├── <span class="file">test_verifier.py</span>
+    ├── <span class="file">test_workspace.py</span>
+    ├── <span class="file">test_failure_injector.py</span>
+    ├── <span class="file">test_orchestrator.py</span>
+    ├── <span class="file">test_benchmark.py</span>
+    └── <span class="file">test_trace_logger.py</span></div>
+
+
+<!-- ═══════════════ SECTION: DATA FLOW ════════════════════════════ -->
+<h3 id="data-flow">Data Flow: A Complete Execution</h3>
+
+<p>
+  Tracing a task with <code>TRUNCATED_DIFF</code> fault injection through the entire system:
+</p>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <h4>Task arrives</h4>
+    <p><code>POST /api/runs</code> with <code>{"task_id": "task_001", "model": "llama3.1:8b", "fault_type": "truncated_diff"}</code>. The server creates a <code>TaskState</code> with <code>status: "planning"</code> and spawns a background worker.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <h4>Workspace isolation</h4>
+    <p><code>workspace.py</code> creates a detached git worktree. The base repo is now immutable — all edits happen in the isolated copy.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-content">
+    <h4>Planning</h4>
+    <p>The orchestrator calls <code>planner.py</code> → the LLM returns <code>["Read auth.py", "Write the fix", "Run tests"]</code>. Checkpoint saved.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-content">
+    <h4>Executing (Step 1: Write)</h4>
+    <p>The executor prompts the LLM → it returns <code>{"tool": "write_file", "args": {"path": "auth.py", "content": "...correct fix..."}}</code>.<br><br>
+    <strong style="color: var(--red);">🔴 CHAOS INJECTION:</strong> The <code>FailureInjector</code> truncates the content to 50% before <code>tools.py</code> writes it to disk. The file on disk is now broken.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">5</div>
+  <div class="step-content">
+    <h4>Verifying</h4>
+    <p><code>verifier.py</code> runs <code>pytest</code> in the sandbox → exit code 1 (tests fail on truncated code). Diff is valid (file was changed). <strong>Verdict: FAILED</strong> (test didn't pass).</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">6</div>
+  <div class="step-content">
+    <h4>Recovering</h4>
+    <p><code>RecoveryController</code> evaluates: <code>attempt_count=0</code>, error mentions "exit code" → <code>RETRY</code>.<br>
+    <strong>Rollback:</strong> <code>git checkout -- .</code> + <code>git clean -fd</code> wipes the truncated file. State reloaded from checkpoint. The fault is already consumed (<code>injected_fault = None</code>) so it won't fire again.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">7</div>
+  <div class="step-content">
+    <h4>Executing (Retry — Clean)</h4>
+    <p>Same plan re-executes. This time no fault → LLM writes the correct fix → tests pass → <code>verifier.py</code> returns <code>passed: True</code> → <code>status: "done"</code> ✅</p>
+  </div>
+</div>
+
+
+<!-- ═══════════════ SECTION: API SURFACE ══════════════════════════ -->
+<h3 id="api-surface">API Surface</h3>
+
+<p>
+  The FastAPI server (<code>server/api.py</code>) exposes these endpoints:
+</p>
+
+<table>
+  <thead><tr><th>Endpoint</th><th>Method</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>/api/health</code></td><td>GET</td><td>Service health + version check</td></tr>
+    <tr><td><code>/api/tasks</code></td><td>GET</td><td>List available benchmark tasks</td></tr>
+    <tr><td><code>/api/runs</code></td><td>POST</td><td>Start a task execution run (returns <code>run_id</code>)</td></tr>
+    <tr><td><code>/api/runs/{id}/stream</code></td><td>GET</td><td>SSE stream — real-time execution events as <code>text/event-stream</code></td></tr>
+    <tr><td><code>/api/runs/{id}/diff</code></td><td>GET</td><td>Current git diff in the workspace</td></tr>
+    <tr><td><code>/api/runs/{id}/pause</code></td><td>POST</td><td>Pause execution</td></tr>
+    <tr><td><code>/api/runs/{id}/stop</code></td><td>POST</td><td>Stop execution</td></tr>
+    <tr><td><code>/api/benchmarks</code></td><td>GET</td><td>Comparative scorecard (cached; add <code>?recompute=true</code> to re-run)</td></tr>
+  </tbody>
+</table>
+
+<h4>SSE Event Schema</h4>
+
+<pre><code><span class="cm">// Each SSE message is a JSON object:</span>
+{
+  <span class="st">"timestamp"</span>: <span class="st">"10:14:23"</span>,
+  <span class="st">"type"</span>: <span class="st">"TOOL_REQUESTED"</span>,           <span class="cm">// event type</span>
+  <span class="st">"message"</span>: <span class="st">"write_file {\"path\": \"auth.py\", ...}"</span>,
+  <span class="st">"stage"</span>: <span class="st">"executing"</span>,                <span class="cm">// current state machine stage</span>
+  <span class="st">"progress"</span>: <span class="nu">45</span>,                      <span class="cm">// 0-100 progress percentage</span>
+  <span class="st">"metrics"</span>: {
+    <span class="st">"tool_calls"</span>: <span class="nu">2</span>,
+    <span class="st">"test_runs"</span>: <span class="nu">0</span>,
+    <span class="st">"files_modified"</span>: <span class="nu">1</span>,
+    <span class="st">"tokens_est"</span>: <span class="nu">680</span>
+  }
+}</code><span class="label">SSE event format</span></pre>
+
+
+<!-- ═══════════════ SECTION: TEST SUITE ═══════════════════════════ -->
+<h3 id="test-suite">Test Suite</h3>
+
+<div class="callout success">
+  <div class="callout-title">All passing</div>
+  <strong>38 tests</strong> across 10 test files, ~1,260 lines. Run time ~120s (dominated by subprocess-based sandbox and verifier tests).
+</div>
+
+<table>
+  <thead><tr><th>Test File</th><th>Tests</th><th>What It Covers</th></tr></thead>
+  <tbody>
+    <tr><td><code>test_state_and_checkpoint</code></td><td>4</td><td>TaskState JSON round-trip, checkpoint save/load/list/rollback</td></tr>
+    <tr><td><code>test_recovery_controller</code></td><td>4</td><td>Circuit breaker, escalation, diagnostic replan, retry paths</td></tr>
+    <tr><td><code>test_trace_logger</code></td><td>1</td><td>JSONL append-only event emission, timestamp monotonicity</td></tr>
+    <tr><td><code>test_sandbox_isolation</code></td><td>5</td><td>Path traversal, absolute path escape, symlink escape, timeout kill</td></tr>
+    <tr><td><code>test_tool_whitelist</code></td><td>5</td><td><code>rm -rf</code> / <code>curl</code> / <code>powershell</code> / <code>wget</code> blocked pre-execution</td></tr>
+    <tr><td><code>test_verifier</code></td><td>4</td><td>Fixed passes, unfixed fails, zero-diff rejection, boundary violation</td></tr>
+    <tr><td><code>test_workspace</code></td><td>2</td><td>Worktree create/destroy, base repo immutability</td></tr>
+    <tr><td><code>test_failure_injector</code></td><td>6</td><td>All 4 fault types + seed reproducibility + event logging</td></tr>
+    <tr><td><code>test_orchestrator</code></td><td>3</td><td>Full autonomous loop, chaos recovery, circuit breaker halt</td></tr>
+    <tr><td><code>test_benchmark</code></td><td>4</td><td>Repo setup, metrics math, scorecard rendering, single eval</td></tr>
+  </tbody>
+</table>
+
+<pre><code>$ python -m unittest discover -s sentinel/tests -p "test_*.py" -v
+
+<span class="cm">----------------------------------------------------------------------</span>
+<span class="cm">Ran 38 tests in 120.210s</span>
+
+<span class="ty">OK</span> <span class="cm">(skipped=1)</span></code><span class="label">test output</span></pre>
+
+<hr>
+
+<p style="text-align: center; color: var(--text-dim); font-size: 13px; margin-top: 48px;">
+  Sentinel v0.1.0 · Built for the iQOO Hackathon · Internal Use Only
+</p>
+
+</div>
+</div>
+
+<!-- ═══════════════ SCRIPTS ═══════════════════════════════════════ -->
+<script>
+  // Mobile sidebar toggle
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('open');
+  }
+
+  // Active link tracking on scroll
+  const sections = document.querySelectorAll('h2[id], h3[id]');
+  const navLinks = document.querySelectorAll('.sidebar nav a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(link => link.classList.remove('active'));
+        const active = document.querySelector(`.sidebar nav a[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(section => observer.observe(section));
+
+  // Close sidebar on link click (mobile)
+  navLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 860) {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('overlay').classList.remove('open');
+      }
+    });
+  });
+</script>
+</body>
+</html>
