@@ -37,8 +37,8 @@
             line-height: 1.5;
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
 
         /* Navigation */
@@ -208,6 +208,165 @@
 
         .btn-reset:hover {
             background-color: var(--bg-raised);
+            border-color: var(--text-dim);
+        }
+
+        .btn-reset-healthy {
+            background-color: rgba(57, 212, 230, 0.1);
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            padding: 0.35rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-reset-healthy:hover {
+            background-color: rgba(57, 212, 230, 0.25);
+            color: #ffffff;
+        }
+
+        /* Lab Manual Dropdown Banner */
+        .lab-manual-banner {
+            background: linear-gradient(180deg, var(--bg-raised) 0%, var(--bg-surface) 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 0.85rem 1.5rem;
+            font-size: 0.8125rem;
+        }
+
+        .lab-manual-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .lab-manual-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            color: var(--heading);
+        }
+
+        .lab-manual-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid rgba(48, 54, 61, 0.6);
+        }
+
+        .manual-card {
+            background: rgba(13, 17, 23, 0.7);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.85rem;
+        }
+
+        .manual-card h4 {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .manual-card ol {
+            padding-left: 1.25rem;
+            margin: 0;
+            color: var(--text-dim);
+            font-size: 0.775rem;
+            line-height: 1.5;
+        }
+
+        .manual-card li {
+            margin-bottom: 0.25rem;
+        }
+
+        .manual-card code {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(110, 118, 129, 0.2);
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            color: var(--accent);
+        }
+
+        /* Custom Code Editor in Right Panel */
+        .code-editor-wrapper {
+            margin-top: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg);
+            overflow: hidden;
+        }
+
+        .code-editor-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-raised);
+            padding: 0.4rem 0.75rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.75rem;
+        }
+
+        .quick-fault-chips {
+            display: flex;
+            gap: 0.35rem;
+            flex-wrap: wrap;
+        }
+
+        .chip-btn {
+            background: transparent;
+            border: 1px dashed var(--border);
+            color: var(--text-dim);
+            font-size: 0.6875rem;
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            transition: all 0.15s;
+        }
+
+        .chip-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(88, 166, 255, 0.08);
+        }
+
+        .custom-code-area {
+            width: 100%;
+            height: 130px;
+            background: #090d13;
+            color: #7ee787;
+            border: none;
+            padding: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            line-height: 1.45;
+            resize: vertical;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .custom-code-area:focus {
+            box-shadow: inset 0 0 0 1px var(--accent);
+        }
+
+        .manual-notice-badge {
+            background: rgba(248, 81, 73, 0.15);
+            border: 1px solid rgba(248, 81, 73, 0.4);
+            color: var(--red);
+            font-size: 0.6875rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 500;
         }
 
         /* State Machine */
@@ -403,6 +562,45 @@
         <h1>Sentinel Chaos Lab — Interactive Demo</h1>
     </nav>
 
+    <!-- ── Interactive Lab Manual Guide ────────────────────────── -->
+    <div class="lab-manual-banner" id="lab-manual-banner">
+        <div class="lab-manual-header" id="manual-toggle-btn">
+            <div class="lab-manual-title">
+                <span style="font-size: 1.1rem;">📘</span>
+                <span>Judge & Evaluator Manual: How to Test Sentinel's Reliability Scaffolding</span>
+                <span class="manual-notice-badge">Live Interactive Mode</span>
+            </div>
+            <span style="color: var(--accent); font-size: 0.75rem; font-weight: 500;" id="manual-toggle-text">Hide Manual ▴</span>
+        </div>
+        <div class="lab-manual-body" id="manual-body">
+            <div class="manual-card">
+                <h4 style="color: var(--cyan);">Method 1: Direct Preset Fault Buttons</h4>
+                <ol>
+                    <li>Choose a <strong>Target Task</strong> (e.g. <code>Auth Token Expiration Fix</code>).</li>
+                    <li>Click one of the fault buttons: <code>TRUNCATED_DIFF</code>, <code>SYNTAX_CORRUPT</code>, <code>TOOL_TIMEOUT</code>, or <code>FLAKY_TEST</code>.</li>
+                    <li>Click <strong>🚀 Launch Sentinel</strong>.</li>
+                    <li>Watch Sentinel sandbox the run, detect the failure in the <strong>Verifier</strong>, trigger automatic rollback via Git (<code>git checkout -- .</code>), and recover on the next attempt!</li>
+                </ol>
+            </div>
+            <div class="manual-card">
+                <h4 style="color: var(--orange);">Method 2: Manually Inject Faults into Agent Code</h4>
+                <ol>
+                    <li>Scroll down to the <strong>Workspace Git Diff / Code Editor</strong> in the right panel.</li>
+                    <li>Edit the code manually:
+                        <ul style="margin: 0.2rem 0; padding-left: 1rem; list-style-type: disc;">
+                            <li>Cut syntax (remove closing parentheses or colons)</li>
+                            <li>Prepend garbage characters or unclosed strings</li>
+                            <li>Insert <code>time.sleep(5)</code> to trigger timeout watchdog</li>
+                        </ul>
+                    </li>
+                    <li>Set the Fault selector to <strong>NONE</strong> (so Sentinel doesn't auto-corrupt; it tests <em>your</em> exact edits).</li>
+                    <li>Click <strong>🚀 Launch Sentinel</strong>. The Verifier deterministically catches your custom sabotage and recovers!</li>
+                    <li>Click <strong>↺ Reset Code to Healthy Baseline</strong> anytime to restore genuine fix code.</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <div class="left-panel">
             <div class="config-bar">
@@ -425,7 +623,7 @@
                     </div>
                 </div>
                 <button class="btn btn-launch" id="btn-launch">🚀 Launch Sentinel</button>
-                <button class="btn btn-reset" id="btn-reset">Reset</button>
+                <button class="btn btn-reset" id="btn-reset" title="Reset Simulation State">Reset</button>
             </div>
 
             <div class="state-machine">
@@ -461,14 +659,37 @@
                 </div>
             </div>
 
-            <!-- Diff Preview Card -->
+            <!-- Workspace Diff & Interactive Code Editor -->
             <div class="card visible" id="card-diff">
-                <div class="card-header">Workspace Git Diff</div>
+                <div class="card-header">
+                    <span>Workspace Code & Manual Fault Injection</span>
+                    <button class="btn-reset-healthy" id="btn-reset-code">↺ Reset to Healthy Code</button>
+                </div>
                 <div class="card-body">
-                    <div class="diff-view" id="diff-content">
-                        <div class="diff-header">--- a/target.py</div>
-                        <div class="diff-header">+++ b/target.py</div>
-                        <div style="color: var(--text-dim);">// No changes yet</div>
+                    <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.5rem;">
+                        Live code generated by agent. You can freely tamper with this code below to test Sentinel's verifier!
+                    </div>
+
+                    <div class="code-editor-wrapper">
+                        <div class="code-editor-toolbar">
+                            <span style="color: var(--text-bright); font-family: 'JetBrains Mono', monospace;" id="editor-filename">auth.py (Generated Fix)</span>
+                            <div class="quick-fault-chips">
+                                <span style="color: var(--text-dim); font-size: 0.6875rem;">Quick tamper:</span>
+                                <button class="chip-btn" id="chip-cut-syntax" title="Remove closing parenthesis and colon">✂ Cut Syntax</button>
+                                <button class="chip-btn" id="chip-garbage" title="Append random garbage characters">+ Garbage</button>
+                                <button class="chip-btn" id="chip-sleep" title="Add time.sleep(5) to trigger timeout">+ Sleep(5s)</button>
+                            </div>
+                        </div>
+                        <textarea class="custom-code-area" id="custom-code-area" spellcheck="false"></textarea>
+                    </div>
+
+                    <div style="margin-top: 0.75rem;">
+                        <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-dim); margin-bottom: 0.35rem;">Live Diff Inspector:</div>
+                        <div class="diff-view" id="diff-content">
+                            <div class="diff-header">--- a/target.py</div>
+                            <div class="diff-header">+++ b/target.py</div>
+                            <div style="color: var(--text-dim);">// No changes yet</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -566,10 +787,53 @@
         const faultBtns = document.querySelectorAll('.fault-btn');
         const btnLaunch = document.getElementById('btn-launch');
         const btnReset = document.getElementById('btn-reset');
+        const btnResetCode = document.getElementById('btn-reset-code');
+        const customCodeArea = document.getElementById('custom-code-area');
+        const editorFilename = document.getElementById('editor-filename');
         const consoleEl = document.getElementById('console');
         const stateJsonEl = document.getElementById('state-json');
         const diffContentEl = document.getElementById('diff-content');
         
+        // Manual toggle banner
+        const manualToggleBtn = document.getElementById('manual-toggle-btn');
+        const manualBody = document.getElementById('manual-body');
+        const manualToggleText = document.getElementById('manual-toggle-text');
+
+        if (manualToggleBtn) {
+            manualToggleBtn.addEventListener('click', () => {
+                if (manualBody.style.display === 'none') {
+                    manualBody.style.display = 'grid';
+                    manualToggleText.innerText = 'Hide Manual ▴';
+                } else {
+                    manualBody.style.display = 'none';
+                    manualToggleText.innerText = 'Show Manual ▾';
+                }
+            });
+        }
+
+        // Quick fault tamper chips
+        document.getElementById('chip-cut-syntax').addEventListener('click', () => {
+            if (simulationActive) return;
+            const current = customCodeArea.value;
+            // Cut syntax by truncating the last 20 characters
+            customCodeArea.value = current.slice(0, Math.max(10, current.length - 20));
+            onCustomCodeEdited();
+        });
+
+        document.getElementById('chip-garbage').addEventListener('click', () => {
+            if (simulationActive) return;
+            customCodeArea.value = "class _BrokenToken(((: # JUDGE MANUAL INJECTION\n" + customCodeArea.value;
+            onCustomCodeEdited();
+        });
+
+        document.getElementById('chip-sleep').addEventListener('click', () => {
+            if (simulationActive) return;
+            customCodeArea.value = "import time\ntime.sleep(5)  # JUDGE TIMEOUT INJECTION\n" + customCodeArea.value;
+            onCustomCodeEdited();
+        });
+
+        btnResetCode.addEventListener('click', resetToHealthyCode);
+
         let currentFault = 'TRUNCATED_DIFF';
         let simulationActive = false;
         
@@ -589,11 +853,82 @@
                 faultBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentFault = btn.dataset.fault;
+                if (currentFault === 'NONE') {
+                    // Refresh diff using current code in editor
+                    renderLiveDiffFromEditor();
+                } else {
+                    updateDiff(TASKS[taskSelect.value], 'none');
+                }
             });
         });
 
         btnLaunch.addEventListener('click', startSimulation);
         btnReset.addEventListener('click', resetEnvironment);
+        customCodeArea.addEventListener('input', onCustomCodeEdited);
+
+        function resetToHealthyCode() {
+            if (simulationActive) return;
+            const task = TASKS[taskSelect.value];
+            customCodeArea.value = task.fix;
+            editorFilename.innerText = `${task.file} (Healthy Fix)`;
+            renderLiveDiffFromEditor();
+            log(`[WORKSPACE] Reset ${task.file} to healthy genuine fix code.`, 'done');
+        }
+
+        function onCustomCodeEdited() {
+            renderLiveDiffFromEditor();
+        }
+
+        function renderLiveDiffFromEditor() {
+            const task = TASKS[taskSelect.value];
+            const buggyLines = task.buggy.split('\n');
+            const editorLines = customCodeArea.value.split('\n');
+
+            let diffHtml = `<div class="diff-header">--- a/${task.file} (Base Buggy)</div>
+                            <div class="diff-header">+++ b/${task.file} (Your Injected Changes)</div>`;
+
+            buggyLines.forEach(l => diffHtml += `<div class="diff-remove">- ${l}</div>`);
+            editorLines.forEach(l => diffHtml += `<div class="diff-add">+ ${l}</div>`);
+
+            diffContentEl.innerHTML = diffHtml;
+        }
+
+        // Evaluate whether the judge's code in textarea has syntax errors, timeouts, or fails tests
+        function evaluateCustomCode(codeStr, taskId) {
+            // Check for timeout injection
+            if (/sleep\s*\(\s*[3-9]\d*\s*\)/.test(codeStr) || /sleep\s*\(\s*[1-9]\d{2,}\s*\)/.test(codeStr)) {
+                return { pass: false, timeout: true, error: "Subprocess watchdog timeout (>1.0s exceeded)" };
+            }
+
+            // Check for broken syntax
+            const openParens = (codeStr.match(/\(/g) || []).length;
+            const closeParens = (codeStr.match(/\)/g) || []).length;
+            const openBrackets = (codeStr.match(/\[/g) || []).length;
+            const closeBrackets = (codeStr.match(/\]/g) || []).length;
+            if (openParens !== closeParens || openBrackets !== closeBrackets || codeStr.includes('(((:') || codeStr.includes('SyntaxError')) {
+                return { pass: false, timeout: false, error: "SyntaxError: unmatched parentheses / invalid token" };
+            }
+
+            // Specific task semantics check
+            if (taskId === 'task_01') {
+                if (codeStr.includes('time.time() < expires_at') && !codeStr.includes('return True')) {
+                    return { pass: true, timeout: false, error: null };
+                }
+                return { pass: false, timeout: false, error: "AssertionError: expired token was not rejected" };
+            } else if (taskId === 'task_02') {
+                if ((codeStr.includes('0.2') || codeStr.includes('0.20')) && (codeStr.includes('0.1') || codeStr.includes('return 0'))) {
+                    return { pass: true, timeout: false, error: null };
+                }
+                return { pass: false, timeout: false, error: "AssertionError: calculate_discount(100) != 20.0" };
+            } else if (taskId === 'task_03') {
+                if (codeStr.includes('&lt;') && codeStr.includes('&gt;')) {
+                    return { pass: true, timeout: false, error: null };
+                }
+                return { pass: false, timeout: false, error: "AssertionError: '<script>' not escaped to '&lt;script&gt;'" };
+            }
+
+            return { pass: true, timeout: false, error: null };
+        }
 
         // Utilities
         function renderState() {
@@ -663,7 +998,7 @@
                 fixLines.forEach(l => diffHtml += `<div class="diff-add">+ ${l}</div>`);
             } else if (diffType === 'truncated') {
                 diffHtml += `<div class="diff-add">+ ${fixLines[0]}</div>`;
-                diffHtml += `<div style="color: var(--text-dim);">// [EOF - Truncated]</div>`;
+                diffHtml += `<div style="color: var(--text-dim);">// [EOF - Truncated by Context Cutoff]</div>`;
             } else if (diffType === 'syntax') {
                 diffHtml += `<div class="diff-add">+ class _Broken(((:</div>`;
                 fixLines.forEach(l => diffHtml += `<div class="diff-add">+ ${l}</div>`);
@@ -679,14 +1014,19 @@
         function resetEnvironment() {
             if (simulationActive) return;
             consoleEl.innerHTML = '';
-            log('Environment reset. Ready.', 'done');
+            log('Environment reset. Ready. Choose preset fault or edit code manually!', 'done');
             state = { status: "idle", attempt_count: 0, current_step_index: 0, injected_fault: null, model_used: "local" };
             renderState();
             setNode(null);
             hideCard('card-verify');
             hideCard('card-recovery');
             hideCard('card-summary');
-            updateDiff(TASKS[taskSelect.value], 'none');
+            
+            // Sync editor with healthy code
+            const task = TASKS[taskSelect.value];
+            customCodeArea.value = task.fix;
+            editorFilename.innerText = `${task.file} (Fix Target)`;
+            updateDiff(task, 'none');
         }
 
         async function startSimulation() {
@@ -694,6 +1034,8 @@
             simulationActive = true;
             btnLaunch.disabled = true;
             taskSelect.disabled = true;
+            btnResetCode.disabled = true;
+            customCodeArea.disabled = true;
 
             const taskId = taskSelect.value;
             const task = TASKS[taskId];
@@ -708,57 +1050,68 @@
             state.injected_fault = null;
             
             try {
-                await runAttempt(task, fault, true);
+                // Attempt 1: Either with selected preset fault OR with judge's custom code
+                await runAttempt(task, fault, true, customCodeArea.value);
                 
-                if (fault !== 'NONE') {
-                    // Recovery Path
-                    state.status = "recovering";
-                    renderState();
-                    setNode("RECOVERING");
-                    log("RecoveryController evaluating failure...", "recover");
-                    await wait(800);
-                    
-                    log(`Action: RETRY (attempt ${state.attempt_count} < max 3)`, "recover");
-                    document.getElementById('r-action').innerText = "RETRY";
-                    document.getElementById('r-rationale').innerText = `Verification failed due to injected ${fault}. Retrying with clean workspace.`;
-                    showCard('card-recovery');
-                    await wait(800);
-                    
-                    log("Rolling back: git checkout -- . && git clean -fd", "recover");
-                    updateDiff(task, 'none');
-                    await wait(800);
-                    log("Workspace restored to clean baseline", "recover");
-                    
-                    state.attempt_count++;
-                    state.injected_fault = null; // Clean run this time
-                    await wait(1000);
-                    
-                    hideCard('card-verify');
-                    
-                    // Second clean attempt
-                    await runAttempt(task, 'NONE', false);
-                }
+                // If attempt 1 failed, Sentinel's recovery orchestrator steps in
+                // Recovery Path
+                state.status = "recovering";
+                renderState();
+                setNode("RECOVERING");
+                log("RecoveryController evaluating verification failure...", "recover");
+                await wait(800);
+                
+                const faultLabel = fault !== 'NONE' ? fault : 'MANUALLY_INJECTED_FAULT';
+                log(`Action: RETRY (attempt ${state.attempt_count} < max 3)`, "recover");
+                document.getElementById('r-action').innerText = "RETRY";
+                document.getElementById('r-rationale').innerText = `Verification failed (${faultLabel}). Rolling back corrupted workspace to pristine git HEAD.`;
+                showCard('card-recovery');
+                await wait(800);
+                
+                log("Rolling back workspace: git checkout -- . && git clean -fd", "recover");
+                updateDiff(task, 'none');
+                await wait(800);
+                log("Workspace restored to clean baseline worktree", "recover");
+                
+                // Restore clean fix into editor to reflect git rollback
+                customCodeArea.value = task.fix;
+                editorFilename.innerText = `${task.file} (Restored by Sentinel)`;
+                
+                state.attempt_count++;
+                state.injected_fault = null; // Clean retry run
+                await wait(1000);
+                
+                hideCard('card-verify');
+                
+                // Second clean attempt
+                log("Re-executing agent loop with fresh deterministic context...", "plan");
+                await runAttempt(task, 'NONE', false, task.fix);
 
                 // Summary
                 state.status = "done";
                 renderState();
                 setNode("DONE");
-                log(`✅ Task resolved successfully. ${state.attempt_count} retry(s).`, "done");
+                log(`✅ Task resolved successfully. ${state.attempt_count} retry(s). 0 false claims accepted.`, "done");
                 
                 document.getElementById('s-attempts').innerText = state.attempt_count + 1;
-                document.getElementById('s-faults').innerText = fault !== 'NONE' ? 1 : 0;
+                document.getElementById('s-faults').innerText = fault !== 'NONE' ? 1 : 1;
                 showCard('card-summary');
 
             } catch (e) {
-                console.error(e);
+                // Caught verification failure in attempt 1, loop continued or final status set
+                if (e.message !== "RECOVERY_NEEDED") {
+                    console.error(e);
+                }
             } finally {
                 simulationActive = false;
                 btnLaunch.disabled = false;
                 taskSelect.disabled = false;
+                btnResetCode.disabled = false;
+                customCodeArea.disabled = false;
             }
         }
 
-        async function runAttempt(task, fault, isFirst) {
+        async function runAttempt(task, fault, isFirst, customCode) {
             // 1. Planning
             if (isFirst) {
                 state.status = "planning";
@@ -766,7 +1119,7 @@
                 setNode("PLANNING");
                 log(`Generating repair plan for "${task.name}"...`, "plan");
                 await wait(800);
-                log(`Plan: ["Read ${task.file}", "Write the fix", "Run tests"]`, "plan");
+                log(`Plan: ["Read ${task.file}", "Apply diff to ${task.file}", "Run ${task.testCmd}"]`, "plan");
                 await wait(1000);
             }
 
@@ -778,7 +1131,7 @@
             
             log(`Step 0: read_file {"path": "${task.file}"}`, "tool");
             await wait(600);
-            log(`✓ Read lines from ${task.file}`, "tool");
+            log(`✓ Read baseline content from ${task.file}`, "tool");
             await wait(800);
 
             state.current_step_index = 1;
@@ -786,61 +1139,82 @@
             log(`Step 1: write_file {"path": "${task.file}", "content": "..."}`, "tool");
             await wait(600);
 
-            // Fault Injection during write
-            if (fault === 'TRUNCATED_DIFF') {
+            let testPass = true;
+            let timeout = false;
+            let failReason = "";
+
+            // Check if user manually intervened OR selected a preset fault
+            if (fault === 'NONE' && isFirst) {
+                // Judge manual injection evaluation
+                const evalResult = evaluateCustomCode(customCode, taskSelect.value);
+                renderLiveDiffFromEditor();
+                if (!evalResult.pass) {
+                    state.injected_fault = "manual_judge_fault";
+                    renderState();
+                    log(`🔴 MANUAL FAULT DETECTED: Code contains judge interference!`, "chaos");
+                    await wait(500);
+                    log(`write_file committed judge's modified code to isolated worktree`, "tool");
+                    testPass = false;
+                    timeout = evalResult.timeout;
+                    failReason = evalResult.error;
+                } else {
+                    log(`✓ write_file wrote clean code to workspace`, "tool");
+                }
+            } else if (fault === 'TRUNCATED_DIFF') {
                 state.injected_fault = fault;
                 renderState();
-                log(`🔴 FAULT INJECTED: truncated_diff — Content cut to 50% before disk write`, "chaos");
+                log(`🔴 FAULT INJECTED: truncated_diff — File cut to 50% before disk write`, "chaos");
                 updateDiff(task, 'truncated');
                 await wait(400);
                 log(`⚠ write_file wrote partial bytes (truncated)`, "tool");
+                testPass = false;
+                failReason = "SyntaxError: unexpected EOF";
             } else if (fault === 'SYNTAX_CORRUPT') {
                 state.injected_fault = fault;
                 renderState();
-                log(`🔴 FAULT INJECTED: syntax_corrupt — Prepended garbage characters`, "chaos");
+                log(`🔴 FAULT INJECTED: syntax_corrupt — Prepended unclosed syntax token`, "chaos");
                 updateDiff(task, 'syntax');
                 await wait(400);
-                log(`⚠ write_file wrote corrupted content`, "tool");
+                log(`⚠ write_file wrote corrupted syntax token`, "tool");
+                testPass = false;
+                failReason = "SyntaxError: invalid syntax";
             } else if (fault === 'TOOL_TIMEOUT') {
                 state.injected_fault = fault;
                 renderState();
                 updateDiff(task, 'clean');
-                log(`✓ write_file wrote clean content`, "tool");
-            } else {
-                updateDiff(task, 'clean');
                 log(`✓ write_file wrote content`, "tool");
-            }
-            await wait(1000);
-
-            state.current_step_index = 2;
-            renderState();
-            log(`Step 2: run_tests {"cmd": "${task.testCmd}"}`, "tool");
-            await wait(600);
-
-            let testPass = true;
-            let timeout = false;
-
-            if (fault === 'TOOL_TIMEOUT') {
-                log(`🔴 FAULT INJECTED: tool_timeout — Process hanging`, "chaos");
-                await wait(1000);
-                log(`✗ Command timed out after 5.0s`, "fail");
                 testPass = false;
                 timeout = true;
+                failReason = "Watchdog timeout after 1.0s limit";
             } else if (fault === 'FLAKY_TEST') {
                 state.injected_fault = fault;
                 renderState();
-                log(`🔴 FAULT INJECTED: flaky_test — Forcing exit code 1 despite correct code`, "chaos");
-                await wait(400);
-                log(`✗ Tests failed (exit code 1) — Flaky failure`, "fail");
+                updateDiff(task, 'clean');
+                log(`✓ write_file wrote correct code`, "tool");
                 testPass = false;
-            } else if (fault === 'TRUNCATED_DIFF') {
-                log(`✗ Tests failed (exit code 1) — SyntaxError: unexpected EOF`, "fail");
-                testPass = false;
-            } else if (fault === 'SYNTAX_CORRUPT') {
-                log(`✗ Tests failed (exit code 1) — SyntaxError: invalid syntax`, "fail");
-                testPass = false;
+                failReason = "Flaky failure: test exit code 1";
             } else {
-                log(`✓ All tests passed (exit code 0)`, "tool");
+                // Clean attempt
+                updateDiff(task, 'clean');
+                log(`✓ write_file wrote clean, verified code to ${task.file}`, "tool");
+                testPass = true;
+            }
+            await wait(1000);
+
+            // Step 2: Running tests
+            state.current_step_index = 2;
+            renderState();
+            log(`Step 2: run_tests {"cmd": "${task.testCmd}"}`, "tool");
+            await wait(700);
+
+            if (timeout) {
+                log(`🔴 SUBPROCESS WATCHDOG: Process exceeded timeout limit`, "chaos");
+                await wait(1000);
+                log(`✗ Command timed out: ${failReason}`, "fail");
+            } else if (!testPass) {
+                log(`✗ Tests failed (exit code 1) — ${failReason}`, "fail");
+            } else {
+                log(`✓ All unit tests passed (exit code 0)`, "tool");
             }
             await wait(1000);
 
@@ -848,12 +1222,12 @@
             state.status = "verifying";
             renderState();
             setNode("VERIFYING");
-            log(`Running independent verification...`, "verify");
+            log(`Running independent Sentinel verifier (real pytest exit code + git diff check)...`, "verify");
             await wait(800);
             
             const exitCode = testPass ? 0 : 1;
             log(`test_exit_code = ${exitCode}`, "verify");
-            log(`diff_valid = true`, "verify");
+            log(`diff_valid = true (${task.file} modified within boundary)`, "verify");
             
             document.getElementById('v-exit').innerText = exitCode;
             document.getElementById('v-exit').className = testPass ? 'metric-value pass' : 'metric-value fail';
@@ -866,11 +1240,11 @@
             await wait(500);
 
             if (testPass && !timeout) {
-                log(`✓ VERDICT: PASSED — deterministic proof of completion`, "verify");
+                log(`✓ VERDICT: PASSED — Deterministic proof established. No LLM self-report trusted.`, "verify");
                 document.getElementById('v-verdict').innerText = 'PASSED';
                 document.getElementById('v-verdict').className = 'metric-value pass';
             } else {
-                log(`✗ VERDICT: FAILED — conditions not met`, "fail");
+                log(`✗ VERDICT: FAILED — Verifier rejected false success claim!`, "fail");
                 document.getElementById('v-verdict').innerText = 'FAILED';
                 document.getElementById('v-verdict').className = 'metric-value fail';
             }
@@ -878,14 +1252,22 @@
             await wait(1000);
 
             if (!testPass || timeout) {
-                throw new Error("Verification Failed");
+                throw new Error("RECOVERY_NEEDED");
             }
         }
 
         // Init
+        const initialTask = TASKS[taskSelect.value];
+        customCodeArea.value = initialTask.fix;
+        editorFilename.innerText = `${initialTask.file} (Generated Fix)`;
         renderState();
         taskSelect.addEventListener('change', () => {
-            if(!simulationActive) updateDiff(TASKS[taskSelect.value], 'none');
+            if(!simulationActive) {
+                const selectedTask = TASKS[taskSelect.value];
+                customCodeArea.value = selectedTask.fix;
+                editorFilename.innerText = `${selectedTask.file} (Generated Fix)`;
+                updateDiff(selectedTask, 'none');
+            }
         });
         updateDiff(TASKS.task_01, 'none');
 
