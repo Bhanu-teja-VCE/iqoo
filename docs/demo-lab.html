@@ -297,6 +297,105 @@
             color: var(--accent);
         }
 
+        /* Task Prompt Box in Left Panel */
+        .prompt-box-card {
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 1.5rem;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            transition: all 0.2s ease;
+        }
+
+        .prompt-box-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .prompt-box-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--heading);
+        }
+
+        .prompt-task-tag {
+            background: rgba(88, 166, 255, 0.15);
+            color: var(--accent);
+            border: 1px solid rgba(88, 166, 255, 0.3);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6875rem;
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .prompt-meta-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .prompt-target-file {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .prompt-target-file code {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--cyan);
+            background: rgba(57, 212, 230, 0.1);
+            padding: 0.1rem 0.35rem;
+            border-radius: 3px;
+        }
+
+        .prompt-box-body {
+            background: #090d13;
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            border-radius: 6px;
+            padding: 0.85rem 1.1rem;
+            position: relative;
+        }
+
+        .prompt-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8125rem;
+            line-height: 1.55;
+            color: #e6edf3;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .prompt-box-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+
+        .prompt-note {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .prompt-note code {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent);
+            background: rgba(88, 166, 255, 0.1);
+            padding: 0.05rem 0.25rem;
+            border-radius: 3px;
+        }
+
         /* Custom Code Editor in Right Panel */
         .code-editor-wrapper {
             margin-top: 0.75rem;
@@ -626,6 +725,28 @@
                 <button class="btn btn-reset" id="btn-reset" title="Reset Simulation State">Reset</button>
             </div>
 
+            <!-- Agent Prompt Box -->
+            <div class="prompt-box-card" id="prompt-box-card">
+                <div class="prompt-box-header">
+                    <div class="prompt-box-title">
+                        <span class="prompt-icon">💬</span>
+                        <span>Prompt Sent to Sentinel & Agent</span>
+                        <span class="prompt-task-tag" id="prompt-task-tag">task_01</span>
+                    </div>
+                    <div class="prompt-meta-actions">
+                        <span class="prompt-target-file" id="prompt-target-file">🎯 Target: <code>auth.py</code> | Verifier: <code>python3 test_auth.py</code></span>
+                        <button class="chip-btn" id="btn-copy-prompt" title="Copy prompt text to clipboard">📋 Copy Prompt</button>
+                    </div>
+                </div>
+                <div class="prompt-box-body">
+                    <div class="prompt-text" id="prompt-text">Loading prompt...</div>
+                </div>
+                <div class="prompt-box-footer">
+                    <span class="prompt-note">⚡ Real-world prompt dispatched to the LLM agent and tracked inside Sentinel's <code>TaskState.instruction</code>.</span>
+                    <span style="color: var(--text-dim); font-size: 0.6875rem;">Status: <span style="color: var(--green);" id="prompt-sync-status">Synced with Engine</span></span>
+                </div>
+            </div>
+
             <div class="state-machine">
                 <div class="node-container" id="nodes-container">
                     <div class="node" data-node="PLANNING">PLANNING</div>
@@ -760,23 +881,29 @@
         // Data & Config
         const TASKS = {
             task_01: {
+                id: "task_01",
                 name: "Auth Token Expiration Fix",
                 file: "auth.py",
                 testCmd: "python3 test_auth.py",
+                prompt: "Fix the is_token_valid function in auth.py to ensure expired tokens are rejected.\n\nBug Context:\nis_token_valid(token, expires_at) unconditionally returns True regardless of timestamp.\n\nRequirements:\n1. If token is empty or null, return False.\n2. Reject expired tokens: return False if time.time() >= expires_at.\n3. Verify solution exits cleanly: python3 test_auth.py",
                 buggy: "def is_token_valid(token, expires_at):\n    return True",
                 fix: "def is_token_valid(token, expires_at):\n    return time.time() < expires_at"
             },
             task_02: {
+                id: "task_02",
                 name: "Tiered Discount Calculator Fix",
                 file: "pricing.py",
                 testCmd: "python3 test_pricing.py",
+                prompt: "Fix the calculate_discount function in pricing.py to apply tiered customer discounts.\n\nBug Context:\ncalculate_discount(subtotal, tier) is an incomplete stub that always returns 0.\n\nRequirements:\n1. If tier is 'GOLD', apply 20% discount (subtotal * 0.20).\n2. If tier is 'SILVER', apply 10% discount (subtotal * 0.10).\n3. For any other tier, return 0.0.\n4. Verify solution exits cleanly: python3 test_pricing.py",
                 buggy: "def calculate_discount(subtotal, tier):\n    return 0",
                 fix: "def calculate_discount(subtotal, tier):\n    if tier == 'GOLD': return subtotal * 0.2\n    return subtotal * 0.1"
             },
             task_03: {
+                id: "task_03",
                 name: "HTML Entity Sanitizer Fix",
                 file: "utils.py",
                 testCmd: "python3 test_utils.py",
+                prompt: "Fix the sanitize function in utils.py to properly sanitize untrusted user input and prevent XSS.\n\nBug Context:\nsanitize(text) is an identity function returning raw text without escaping.\n\nRequirements:\n1. Escape '<' to '&lt;' and '>' to '&gt;'.\n2. Escape '&' to '&amp;' without double escaping.\n3. Return empty string if text is empty or null.\n4. Verify solution exits cleanly: python3 test_utils.py",
                 buggy: "def sanitize(text):\n    return text",
                 fix: "def sanitize(text):\n    return text.replace('<', '&lt;').replace('>', '&gt;')"
             }
@@ -793,6 +920,12 @@
         const consoleEl = document.getElementById('console');
         const stateJsonEl = document.getElementById('state-json');
         const diffContentEl = document.getElementById('diff-content');
+
+        // Prompt Box Elements
+        const promptTaskTag = document.getElementById('prompt-task-tag');
+        const promptTargetFile = document.getElementById('prompt-target-file');
+        const promptText = document.getElementById('prompt-text');
+        const btnCopyPrompt = document.getElementById('btn-copy-prompt');
         
         // Manual toggle banner
         const manualToggleBtn = document.getElementById('manual-toggle-btn');
@@ -839,12 +972,43 @@
         
         // Initial State
         let state = {
+            task_id: "task_01",
+            instruction: TASKS.task_01.prompt.split('\n\n')[0],
             status: "idle",
             attempt_count: 0,
             current_step_index: 0,
             injected_fault: null,
             model_used: "local"
         };
+
+        function updatePromptDisplay(taskKey) {
+            const task = TASKS[taskKey];
+            if (!task) return;
+            promptTaskTag.innerText = task.id;
+            promptTargetFile.innerHTML = `🎯 Target: <code>${task.file}</code> | Verifier: <code>${task.testCmd}</code>`;
+            promptText.innerText = task.prompt;
+            state.task_id = task.id;
+            state.instruction = task.prompt.split('\n\n')[0];
+            renderState();
+        }
+
+        if (btnCopyPrompt) {
+            btnCopyPrompt.addEventListener('click', () => {
+                const currentPrompt = TASKS[taskSelect.value].prompt;
+                navigator.clipboard.writeText(currentPrompt).then(() => {
+                    const orig = btnCopyPrompt.innerText;
+                    btnCopyPrompt.innerText = '✓ Copied!';
+                    btnCopyPrompt.style.color = 'var(--green)';
+                    setTimeout(() => {
+                        btnCopyPrompt.innerText = orig;
+                        btnCopyPrompt.style.color = '';
+                    }, 1600);
+                }).catch(() => {
+                    btnCopyPrompt.innerText = '✓ Copied!';
+                    setTimeout(() => { btnCopyPrompt.innerText = '📋 Copy Prompt'; }, 1600);
+                });
+            });
+        }
 
         // Event Listeners
         faultBtns.forEach(btn => {
@@ -1015,7 +1179,16 @@
             if (simulationActive) return;
             consoleEl.innerHTML = '';
             log('Environment reset. Ready. Choose preset fault or edit code manually!', 'done');
-            state = { status: "idle", attempt_count: 0, current_step_index: 0, injected_fault: null, model_used: "local" };
+            const task = TASKS[taskSelect.value];
+            state = { 
+                task_id: task.id, 
+                instruction: task.prompt.split('\n\n')[0],
+                status: "idle", 
+                attempt_count: 0, 
+                current_step_index: 0, 
+                injected_fault: null, 
+                model_used: "local" 
+            };
             renderState();
             setNode(null);
             hideCard('card-verify');
@@ -1023,10 +1196,10 @@
             hideCard('card-summary');
             
             // Sync editor with healthy code
-            const task = TASKS[taskSelect.value];
             customCodeArea.value = task.fix;
             editorFilename.innerText = `${task.file} (Fix Target)`;
             updateDiff(task, 'none');
+            updatePromptDisplay(taskSelect.value);
         }
 
         async function startSimulation() {
@@ -1117,6 +1290,7 @@
                 state.status = "planning";
                 renderState();
                 setNode("PLANNING");
+                log(`[PROMPT] Dispatched task instruction: "${task.prompt.split('\n\n')[0]}"`, "plan");
                 log(`Generating repair plan for "${task.name}"...`, "plan");
                 await wait(800);
                 log(`Plan: ["Read ${task.file}", "Apply diff to ${task.file}", "Run ${task.testCmd}"]`, "plan");
@@ -1260,6 +1434,7 @@
         const initialTask = TASKS[taskSelect.value];
         customCodeArea.value = initialTask.fix;
         editorFilename.innerText = `${initialTask.file} (Generated Fix)`;
+        updatePromptDisplay(taskSelect.value);
         renderState();
         taskSelect.addEventListener('change', () => {
             if(!simulationActive) {
@@ -1267,6 +1442,7 @@
                 customCodeArea.value = selectedTask.fix;
                 editorFilename.innerText = `${selectedTask.file} (Generated Fix)`;
                 updateDiff(selectedTask, 'none');
+                updatePromptDisplay(taskSelect.value);
             }
         });
         updateDiff(TASKS.task_01, 'none');
